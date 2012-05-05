@@ -1,5 +1,5 @@
 /* http://home.iprimus.com.au/kbwood/jquery/timeEntry.html
-   Time entry for jQuery v1.2.1.
+   Time entry for jQuery v1.2.2.
    Written by Keith Wood (kbwood@iprimus.com.au) June 2007.
    Under the Creative Commons Licence http://creativecommons.org/licenses/by/3.0/
    Share or Remix it but please Attribute the author. */
@@ -44,13 +44,11 @@ function TimeEntry() {
 			// false to never use it
 		minTime: null, // The earliest selectable time, or null for no limit
 		maxTime: null, // The latest selectable time, or null for no limit
-		spinnerPath: '', // The common path for the images below
-		spinnerImage: 'timeEntry.gif', // The URL of the image to use for the time spinner
-		spinnerClickImages: ['timeEntryNow.gif', 'timeEntryPrev.gif',
-			'timeEntryNext.gif', 'timeEntryInc.gif', 'timeEntryDec.gif'],
-			// Array of image URLs for use when "buttons" are clicked
+		spinnerImage: 'timeEntry.png', // The URL of the images to use for the time spinner
+			// Six images packed horizontally for normal and then each button pressed
 		spinnerSize: [20, 20, 8], // The width and height of the spinner image,
 			// and size of centre button for current time
+		spinnerIncDecOnly: false, // True for increment/decrement buttons only, false for all
 		spinnerRepeat: [500, 250], // Initial and subsequent waits in milliseconds
 			// for repeats on the spinner buttons
 		fieldSettings: null // Function that takes an input field and
@@ -109,12 +107,12 @@ $.extend(TimeEntry.prototype, {
 		var inst = timeEntry._getInst(input._timeId);
 		var fieldSize = inst._get('separator').length + 2;
 		inst._field = 0;
-		if (event.rangeOffset) { // Mozilla - calc from character offset
+		if ($.browser.mozilla) { // calc from character offset
 			var offset = event.rangeOffset;
 			inst._field = (offset > Math.max(1, inst._secondField) * fieldSize + 2 ?
 				inst._ampmField : Math.floor(offset / fieldSize));
 		}
-		else if (input.createTextRange) { // IE - check against bounding boxes
+		else if ($.browser.msie) { // check against bounding boxes
 			var value = input.value;
 			for (var field = 0; field <= Math.max(1, inst._secondField, inst._ampmField); field++) {
 				var end = (field != inst._ampmField ? (field * fieldSize) + 2 :
@@ -129,13 +127,24 @@ $.extend(TimeEntry.prototype, {
 			}
 			input.value = value; // restore original value
 		}
+		else if ($.browser.opera) { // use input select range
+			var value = input.value;
+			for (var field = 0; field <= Math.max(1, inst._secondField, inst._ampmField); field++) {
+				var start = (field != inst._ampmField ? (field * fieldSize) :
+					(inst._ampmField * fieldSize) + inst._get('ampmPrefix').length);
+				if (start >= input.selectionStart) {
+					inst._field = field;
+					break;
+				}
+			}
+		}
 		inst._showField();
 	},
 
 	/* Handle keystrokes in the field. */
 	_doKeyDown: function(event) {
 		if (event.keyCode >= 48) { // >= '0'
-			return true;
+			return false;
 		}
 		var inst = timeEntry._getInst(this._timeId);
 		switch (event.keyCode) {
@@ -182,6 +191,7 @@ $.extend(TimeEntry.prototype, {
 
 	/* Increment/decrement on mouse wheel activity. */
 	_doMouseWheel: function(event, delta) {
+		delta = ($.browser.opera ? -delta / Math.abs(delta) : delta);
 		var inst = timeEntry._getInst(this._timeId);
 		inst._adjustField(delta);
 		event.preventDefault();
@@ -190,14 +200,16 @@ $.extend(TimeEntry.prototype, {
 	/* Attach the time entry handler to an input field. */
 	_connectTimeEntry: function(target, inst) {
 		var input = $(target);
-		var spinnerPath = inst._get('spinnerPath');
 		var spinnerImage = inst._get('spinnerImage');
 		var spinnerText = inst._get('spinnerText');
+		var spinnerSize = inst._get('spinnerSize');
 		var appendText = inst._get('appendText');
 		input.wrap('<span class="timeEntry_wrap"></span>').
-			after((spinnerImage ? '<img class="timeEntry_control" src="' +
-			spinnerPath + spinnerImage + '" alt="' + spinnerText +
-			'" title="' + spinnerText + '" _timeid="' + inst._id + '"/>' : '') +
+			after((spinnerImage ? '<span class="timeEntry_control" _timeid="' + inst._id +
+			'" style="display: inline-block; background: url(\'' + spinnerImage + '\') 0 0 no-repeat; ' +
+			'width: ' + spinnerSize[0] + 'px; height: ' + spinnerSize[1] + 'px;' +
+			($.browser.mozilla ? ' padding-left: ' + spinnerSize[0] + 
+			'px; padding-top: ' + (spinnerSize[1] - 18) + 'px;' : '') + '"></span>' : '') +
 			(appendText ? '<span class="timeEntry_append">' + appendText + '</span>' : ''));
 		input.focus(this._doFocus).blur(this._doBlur).dblclick(this._doDblClick).
 			keydown(this._doKeyDown).keypress(this._doKeyPress);
@@ -214,7 +226,7 @@ $.extend(TimeEntry.prototype, {
 			input.mousewheel(this._doMouseWheel);
 		}
 		input[0]._timeId = inst._id;
-		var spinner = $('../img.timeEntry_control', input);
+		var spinner = $('../span.timeEntry_control', input);
 		spinner.mousedown(this._handleSpinner).mouseup(this._endSpinner).
 			mouseout(this._endSpinner).mousemove(this._describeSpinner);
 		if (spinner[0]) {
@@ -223,13 +235,15 @@ $.extend(TimeEntry.prototype, {
 	},
 
 	/* Enable a time entry input and any associated spinner.
-	   @param  inputs  element/object - single input field or jQuery collection of input fields
+	   @param  inputs  string - selector for input field(s) or
+	                   element - single input field or
+	                   object - jQuery collection of input fields
 	   @return void */
 	enableFor: function(inputs) {
 		inputs = (inputs.jquery ? inputs : $(inputs));
 		inputs.each(function() {
 			this.disabled = false;
-			$('../img.timeEntry_control', this).css('opacity', '1.0');
+			$('../span.timeEntry_control', this).css('opacity', '1.0');
 			var $this = this;
 			timeEntry._disabledInputs = $.map(timeEntry._disabledInputs,
 				function(value) { return (value == $this ? null : value); }); // delete entry
@@ -237,13 +251,15 @@ $.extend(TimeEntry.prototype, {
 	},
 
 	/* Disable a time entry input and any associated spinner.
-	   @param  inputs  element/object - single input field or jQuery collection of input fields
+	   @param  inputs  string - selector for input field(s) or
+	                   element - single input field or
+	                   object - jQuery collection of input fields
 	   @return void */
 	disableFor: function(inputs) {
 		inputs = (inputs.jquery ? inputs : $(inputs));
 		inputs.each(function() {
 			this.disabled = true;
-			$('../img.timeEntry_control', this).css('opacity', '0.5');
+			$('../span.timeEntry_control', this).css('opacity', '0.5');
 			var $this = this;
 			timeEntry._disabledInputs = $.map(timeEntry._disabledInputs,
 				function(value) { return (value == $this ? null : value); }); // delete entry
@@ -319,10 +335,7 @@ $.extend(TimeEntry.prototype, {
 		var inst = timeEntry._getInst(input._timeId);
 		timeEntry._doFocus(input);
 		var region = timeEntry._getSpinnerRegion(inst, event);
-		var spinnerClickImages = inst._get('spinnerClickImages');
-		if (spinnerClickImages.length > 0) {
-			spinner.src = inst._get('spinnerPath') + spinnerClickImages[region];
-		}
+		timeEntry._changeSpinner(inst, spinner, region);
 		timeEntry._actionSpinner(inst, region);
 		var spinnerRepeat = inst._get('spinnerRepeat');
 		if (region >= 3 && spinnerRepeat[0]) { // repeat increment/decrement
@@ -363,8 +376,10 @@ $.extend(TimeEntry.prototype, {
 	_endSpinner: function(event) {
 		var spinner = timeEntry._getSpinnerTarget(event);
 		var inst = timeEntry._getInst(spinner._timeId);
-		spinner.src = inst._get('spinnerPath') + inst._get('spinnerImage');
-		timeEntry._lastInput = timeEntry._blurredInput;
+		timeEntry._changeSpinner(inst, spinner, -1);
+		if (!$.browser.opera) {
+			timeEntry._lastInput = timeEntry._blurredInput;
+		}
 		if (timeEntry._lastInput) {
 			inst._showField();
 		}
@@ -380,17 +395,25 @@ $.extend(TimeEntry.prototype, {
 		var spinner = this._getSpinnerTarget(event);
 		var pos = this._findPos(spinner);
 		var scrolled = this._findScroll(spinner);
-		var left = event.clientX + scrolled[0] - pos[0] - ($.browser.msie ? 1 : 0);
+		var spinnerIncDecOnly = inst._get('spinnerIncDecOnly');
+		var left = (spinnerIncDecOnly ? 99 :
+			event.clientX + scrolled[0] - pos[0] - ($.browser.msie ? 1 : 0));
 		var top = event.clientY + scrolled[1] - pos[1] - ($.browser.msie ? 1 : 0);
 		var spinnerSize = inst._get('spinnerSize');
-		var right = spinnerSize[0] - left;
+		var right = (spinnerIncDecOnly ? 99 : spinnerSize[0] - left);
 		var bottom = spinnerSize[1] - top;
-		if (Math.abs(left - right) <= spinnerSize[2] &&
+		if (spinnerSize[2] > 0 && Math.abs(left - right) <= spinnerSize[2] &&
 				Math.abs(top - bottom) <= spinnerSize[2]) {
 			return 0; // centre button
 		}
 		var min = Math.min(left, top, right, bottom);
 		return (min == left ? 1 : (min == right ? 2 : (min == top ? 3 : 4))); // nearest edge
+	},
+	
+	/* Change the spinner image depending on button clicked. */
+	_changeSpinner: function(inst, spinner, region) {
+		$(spinner).css('background-position',
+			'-' + ((region + 1) * inst._get('spinnerSize')[0]) + ' 0');
 	},
 
 	/* Find an object's position on the screen. */
@@ -478,13 +501,13 @@ $.extend(TimeEntryInstance.prototype, {
 		if (currentTime.length >= 2) {
 			var isAM = (value.indexOf(ampmNames[0]) > -1);
 			var isPM = (value.indexOf(ampmNames[1]) > -1);
-			var hour = parseInt(this._trimNumber(currentTime[0]));
+			var hour = parseInt(currentTime[0], 10);
 			hour = (isNaN(hour) ? 0 : hour);
 			hour = ((isAM || isPM) && hour == 12 ? 0 : hour) + (isPM ? 12 : 0);
-			var minute = parseInt(this._trimNumber(currentTime[1]));
+			var minute = parseInt(currentTime[1], 10);
 			minute = (isNaN(minute) ? 0 : minute);
 			var second = (currentTime.length >= 3 ?
-				parseInt(this._trimNumber(currentTime[2])) : 0);
+				parseInt(currentTime[2], 10) : 0);
 			second = (isNaN(second) || !this._get('showSeconds') ? 0 : second);
 			return [hour, minute, second];
 		} 
@@ -547,17 +570,6 @@ $.extend(TimeEntryInstance.prototype, {
 			range.select();
 		}
 		input.focus();
-	},
-
-	/* Ensure a number is not treated as octal. */
-	_trimNumber: function(value) {
-		if (value == '') {
-			return '';
-		}
-		while (value.charAt(0) == '0') {
-			value = value.substring(1);
-		}
-		return value;
 	},
 
 	/* Ensure displayed single number has a leading zero. */
