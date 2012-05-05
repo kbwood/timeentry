@@ -1,11 +1,11 @@
 /* http://home.iprimus.com.au/kbwood/jquery/timeEntry.html
-   Time entry for jQuery v1.1.1.
+   Time entry for jQuery v1.1.2.
    Written by Keith Wood (kbwood@iprimus.com.au) June 2007.
    Under the Creative Commons Licence http://creativecommons.org/licenses/by/3.0/
    Share or Remix it but please Attribute the author. */
    
 /* Turn an input field into an entry point for a time value.
-   The time can be entered via directly typing the value, 
+   The time can be entered via directly typing the value,
    via the arrow keys, or via spinner buttons.
    It is configurable to show 12 or 24-hour time, to show or hide seconds,
    to enforce a minimum and/or maximum time, to change the spinner image,
@@ -39,8 +39,8 @@ var timeEntry = {
 	connectTimeEntry: function(target) {
 		var input = $(target);
 		input.wrap('<span class="timeEntry_wrap"></span>').
-			after((this.spinnerImage ? '<img class="timeEntry_control" src="' + this.spinnerImage + 
-			'" alt="' + this.spinnerText + '" title="' + this.spinnerText + '"/>' : '') + 
+			after((this.spinnerImage ? '<img class="timeEntry_control" src="' + this.spinnerImage +
+			'" alt="' + this.spinnerText + '" title="' + this.spinnerText + '"/>' : '') +
 			(this.appendText ? '<span class="timeEntry_append">' + this.appendText + '</span>' : ''));
 		input.focus(this.doFocus).blur(this.doBlur).keydown(this.doKeyDown).keypress(this.doKeyPress);
 		$('../img.timeEntry_control', input).mousedown(this.handleSpinner).
@@ -54,12 +54,12 @@ var timeEntry = {
 			this.disabled = false;
 			$('../img.timeEntry_control', this).each(function() { $(this).css('opacity', '1.0'); });
 			var $this = this;
-			timeEntry.disabledInputs = $.map(timeEntry.disabledInputs, 
+			timeEntry.disabledInputs = $.map(timeEntry.disabledInputs,
 				function(value) { return (value == $this ? null : value); }); // delete entry
 		});
 		return false;
 	},
-	
+
 	/* Disable a time entry input and any associated spinner. */
 	disableFor: function(inputs) {
 		inputs = (inputs.jquery ? inputs : $(inputs));
@@ -67,13 +67,13 @@ var timeEntry = {
 			this.disabled = true;
 			$('../img.timeEntry_control', this).each(function() { $(this).css('opacity', '0.5'); });
 			var $this = this;
-			timeEntry.disabledInputs = $.map(timeEntry.disabledInputs, 
+			timeEntry.disabledInputs = $.map(timeEntry.disabledInputs,
 				function(value) { return (value == $this ? null : value); }); // delete entry
 			timeEntry.disabledInputs[timeEntry.disabledInputs.length] = this;
 		});
 		return false;
 	},
-	
+
 	/* Check whether an input field has been disabled. */
 	isDisabled: function(inputCheck) {
 		for (var i = 0; i < this.disabledInputs.length; i++) {
@@ -85,7 +85,7 @@ var timeEntry = {
 	},
 
 	/* Initialise time entry. */
-	doFocus: function(target) { 
+	doFocus: function(target) {
 		var newInput = (target.nodeName && target.nodeName.toLowerCase() == 'input' ? target : this);
 		if (timeEntry.lastInput == newInput) {
 			return;
@@ -107,7 +107,7 @@ var timeEntry = {
 		timeEntry.blurredInput = timeEntry.lastInput;
 		timeEntry.lastInput = null;
 	},
-	
+
 	/* Handle keystrokes in the field. */
 	doKeyDown: function(event) {
 		if (event.keyCode >= 48) { // >= '0'
@@ -152,17 +152,20 @@ var timeEntry = {
 		}
 		else if (chr >= '0' && chr <= '9') { // allow direct entry of time
 			var value = (timeEntry.lastChr + chr) * 1;
-			var hour = (timeEntry.field == 0 && ((timeEntry.show24Hours && value < 24) || (value >= 1 && value <= 12)) ? 
-				value : timeEntry.selectedHour);
+			var hour = (timeEntry.field == 0 && ((timeEntry.show24Hours && value < 24) ||
+				(value >= 1 && value <= 12)) ? value : timeEntry.selectedHour);
 			var minute = (timeEntry.field == 1 && value < 60 ? value : timeEntry.selectedMinute);
-			var second = (timeEntry.field == timeEntry.secondField && value < 60 ? value : timeEntry.selectedSecond);
+			var second = (timeEntry.field == timeEntry.secondField && value < 60 ?
+				value : timeEntry.selectedSecond);
 			var fields = timeEntry.constrainTime([hour, minute, second]);
 			timeEntry.setTime(new Date(0, 0, 0, fields[0], fields[1], fields[2]));
 			timeEntry.lastChr = chr;
 		}
 		else if (!timeEntry.show24Hours) { // set am/pm based on first char of names
-			if ((chr == timeEntry.ampmNames[0].substring(0, 1).toLowerCase() && timeEntry.selectedHour >= 12) ||
-					(chr == timeEntry.ampmNames[1].substring(0, 1).toLowerCase() && timeEntry.selectedHour < 12)) { 
+			if ((chr == timeEntry.ampmNames[0].substring(0, 1).toLowerCase() &&
+					timeEntry.selectedHour >= 12) ||
+					(chr == timeEntry.ampmNames[1].substring(0, 1).toLowerCase() &&
+					timeEntry.selectedHour < 12)) {
 				var saveField = timeEntry.field;
 				timeEntry.field = timeEntry.ampmField;
 				timeEntry.adjustField(+1);
@@ -172,7 +175,7 @@ var timeEntry = {
 		}
 		return false;
 	},
-	
+
 	/* Extract the time value from the input field, or default to now. */
 	parseTime: function() {
 		var value = this.input.val();
@@ -182,11 +185,14 @@ var timeEntry = {
 			var isPM = (value.indexOf(this.ampmNames[1]) > -1);
 			this.selectedHour = parseInt(this.trimNumber(currentTime[0]));
 			this.selectedHour = (isNaN(this.selectedHour) ? 0 : this.selectedHour);
-			this.selectedHour = ((isAM || isPM) && this.selectedHour == 12 ? 0 : this.selectedHour) + (isPM ? 12 : 0);
+			this.selectedHour = ((isAM || isPM) && this.selectedHour == 12 ?
+				0 : this.selectedHour) + (isPM ? 12 : 0);
 			this.selectedMinute = parseInt(this.trimNumber(currentTime[1]));
 			this.selectedMinute = (isNaN(this.selectedMinute) ? 0 : this.selectedMinute);
-			this.selectedSecond = (currentTime.length >= 3 ? parseInt(this.trimNumber(currentTime[2])) : 0);
-			this.selectedSecond = (isNaN(this.selectedSecond) || !this.showSeconds ? 0 : this.selectedSecond);
+			this.selectedSecond = (currentTime.length >= 3 ?
+				parseInt(this.trimNumber(currentTime[2])) : 0);
+			this.selectedSecond = (isNaN(this.selectedSecond) || !this.showSeconds ?
+				0 : this.selectedSecond);
 		} else {
 			var now = this.constrainTime();
 			this.selectedHour = now[0];
@@ -199,7 +205,7 @@ var timeEntry = {
 			this.showTime();
 		}
 	},
-	
+
 	/* Set the field to the current time. */
 	currentTime: function() {
 		var now = this.constrainTime();
@@ -225,17 +231,18 @@ var timeEntry = {
 		}
 		return fields;
 	},
-	
+
 	/* Set the selected time into the input field. */
 	showTime: function() {
-		var currentTime = (this.formatNumber(this.show24Hours ? this.selectedHour : ((this.selectedHour + 11) % 12) + 1) + 
-			this.separator + this.formatNumber(this.selectedMinute) + 
+		var currentTime = (this.formatNumber(this.show24Hours ? this.selectedHour :
+			((this.selectedHour + 11) % 12) + 1) +
+			this.separator + this.formatNumber(this.selectedMinute) +
 			(this.showSeconds ? this.separator + this.formatNumber(this.selectedSecond) : '') +
-			(this.show24Hours ?  '' : (this.selectedHour < 12 ? this.ampmNames[0] : this.ampmNames[1])));
+			(this.show24Hours ?  '' : this.ampmNames[(this.selectedHour < 12 ? 0 : 1)]));
 		this.input.val(currentTime);
 		this.showField();
 	},
-	
+
 	/* Highlight the current time field. */
 	showField: function() {
 		var curInput = this.input[0];
@@ -252,7 +259,7 @@ var timeEntry = {
 		}
 		curInput.focus();
 	},
-	
+
 	/* Ensure a number is not treated as octal. */
 	trimNumber: function(value) {
 		if (value == '')
@@ -262,18 +269,18 @@ var timeEntry = {
 		}
 		return value;
 	},
-	
+
 	/* Ensure displayed single number has a leading zero. */
 	formatNumber: function(value) {
 		return (value < 10 ? '0' : '') + value;
 	},
-	
+
 	/* Change the title based on position within the spinner. */
 	describeSpinner: function(event) {
-		timeEntry.getSpinnerTarget(event).title = 
+		timeEntry.getSpinnerTarget(event).title =
 			timeEntry.spinnerTexts[timeEntry.getSpinnerRegion(event)];
 	},
-	
+
 	/* Handle a click on the spinner. */
 	handleSpinner: function(event) {
 		var spinner = timeEntry.getSpinnerTarget(event);
@@ -292,13 +299,14 @@ var timeEntry = {
 		}
 		timeEntry.actionSpinner(region);
 		if (region >= 3 && timeEntry.spinnerRepeat[0]) { // repeat increment/decrement
-			timeEntry.timer = setTimeout(function() { timeEntry.repeatSpinner(curInput, region); },
+			timeEntry.timer = setTimeout(
+				function() { timeEntry.repeatSpinner(curInput, region); },
 				timeEntry.spinnerRepeat[0]);
 			$(spinner).one('mouseout', timeEntry.releaseSpinner).
 				one('mouseup', timeEntry.releaseSpinner);
 		}
 	},
-	
+
 	/* Action a click on the spinner. */
 	actionSpinner: function(region) {
 		switch (region) {
@@ -309,12 +317,13 @@ var timeEntry = {
 			case 4: this.adjustField(-1); break;
 		}
 	},
-	
+
 	/* Repeat a click on the spinner. */
 	repeatSpinner: function(curInput, region) {
 		timeEntry.lastInput = curInput;
 		this.actionSpinner(region);
-		this.timer = setTimeout(function() { timeEntry.repeatSpinner(curInput, region); }, 
+		this.timer = setTimeout(
+			function() { timeEntry.repeatSpinner(curInput, region); },
 			this.spinnerRepeat[1]);
 	},
 
@@ -332,24 +341,55 @@ var timeEntry = {
 			timeEntry.showField();
 		}
 	},
-	
+
 	/* Retrieve the spinner from the event. */
 	getSpinnerTarget: function(event) {
 		return (event.target ? event.target : event.srcElement);
 	},
-	
+
 	/* Determine which "button" within the spinner was clicked. */
 	getSpinnerRegion: function(event) {
 		var target = this.getSpinnerTarget(event);
-		var left = event.clientX - target.offsetLeft;
-		var top = event.clientY - target.offsetTop;
+		var pos = this.findPos(target);
+		var scrolled = this.findScroll(target);
+		var left = event.clientX + scrolled[0] - pos[0];
+		var top = event.clientY + scrolled[1] - pos[1];
 		var right = this.spinnerSize[0] - left;
 		var bottom = this.spinnerSize[1] - top;
 		var min = Math.min(left, top, right, bottom);
-		if (Math.abs(left - right) < this.spinnerSize[2] && Math.abs(top - bottom) < this.spinnerSize[2]) {
+		if (Math.abs(left - right) < this.spinnerSize[2] &&
+				Math.abs(top - bottom) < this.spinnerSize[2]) {
 			return 0; // centre button
 		}
 		return (min == left ? 1 : (min == right ? 2 : (min == top ? 3 : 4))); // nearest edge
+	},
+
+	/* Find an object's position on the screen. */
+	findPos: function(obj) {
+		var curLeft = curTop = 0;
+		if (obj.offsetParent) {
+			curLeft = obj.offsetLeft;
+			curTop = obj.offsetTop;
+			while (obj = obj.offsetParent) {
+				var origCurLeft = curLeft;
+				curLeft += obj.offsetLeft;
+				if (curLeft < 0) {
+					curLeft = origCurLeft;
+				}
+				curTop += obj.offsetTop;
+			}
+		}
+		return [curLeft, curTop];
+	},
+
+	/* Find an object's scroll offset on the screen. */
+	findScroll: function(obj) {
+		var curLeft = curTop = 0;
+		while (obj = obj.offsetParent) {
+			curLeft += obj.scrollLeft;
+			curTop += obj.scrollTop;
+		}
+		return [curLeft, curTop];
 	},
 
 	/* Update the current field in the direction indicated. */
@@ -357,8 +397,8 @@ var timeEntry = {
 		if (this.input.val() == '') {
 			offset = 0;
 		}
-		this.setTime(new Date(2001, 1 - 1, 26, 
-			this.selectedHour + (this.field == 0 ? offset * this.timeSteps[0] : 0) + 
+		this.setTime(new Date(2001, 1 - 1, 26,
+			this.selectedHour + (this.field == 0 ? offset * this.timeSteps[0] : 0) +
 			(this.field == this.ampmField ? offset * 12 : 0),
 			this.selectedMinute + (this.field == 1 ? offset * this.timeSteps[1] : 0),
 			this.selectedSecond + (this.field == this.secondField ? offset * this.timeSteps[2] : 0)));
@@ -371,14 +411,14 @@ var timeEntry = {
 		this.minTime = this.normaliseTime(this.minTime);
 		this.maxTime = this.normaliseTime(this.maxTime);
 		// ensure it is within the bounds set
-		time = (this.minTime && time < this.minTime ? this.minTime : 
+		time = (this.minTime && time < this.minTime ? this.minTime :
 			(this.maxTime && time > this.maxTime ? this.maxTime : time));
 		this.selectedHour = time.getHours();
 		this.selectedMinute = time.getMinutes();
 		this.selectedSecond = time.getSeconds();
 		this.showTime();
 	},
-	
+
 	/* Normalise time object to a common date. */
 	normaliseTime: function(time) {
 		if (!time) {
@@ -389,7 +429,7 @@ var timeEntry = {
 		time.setDate(26);
 		return time;
 	},
-	
+
 	/* Move to previous field, or out of field altogether if appropriate (return  true). */
 	previousField: function(moveOut) {
 		var atFirst = (this.input.val() == '' || this.field == 0);
@@ -400,10 +440,10 @@ var timeEntry = {
 		this.lastChr = '';
 		return (atFirst && moveOut);
 	},
-	
+
 	/* Move to next field, or out of field altogether if appropriate (return  true). */
 	nextField: function(moveOut) {
-		var atLast = (this.input.val() == '' || 
+		var atLast = (this.input.val() == '' ||
 			this.field == (this.showSeconds ? 2 : 1) + (this.show24Hours ? 0 : 1));
 		if (!atLast) {
 			this.field++;
