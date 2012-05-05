@@ -1,5 +1,5 @@
 /* http://keith-wood.name/timeEntry.html
-   Time entry for jQuery v1.4.6.
+   Time entry for jQuery v1.4.7.
    Written by Keith Wood (kbwood{at}iinet.com.au) June 2007.
    Dual licensed under the GPL (http://dev.jquery.com/browser/trunk/jquery/GPL-LICENSE.txt) and 
    MIT (http://dev.jquery.com/browser/trunk/jquery/MIT-LICENSE.txt) licenses. 
@@ -112,11 +112,11 @@ $.extend(TimeEntry.prototype, {
 			bind('keydown.timeEntry', this._doKeyDown).bind('keypress.timeEntry', this._doKeyPress);
 		// Check pastes
 		if ($.browser.mozilla) {
-			input.bind('input.timeEntry', function(event) { $.timeentry._parseTime(inst); });
+			input.bind('input.timeEntry', function(event) { $.timeEntry._parseTime(inst); });
 		}
 		if ($.browser.msie) {
 			input.bind('paste.timeEntry', 
-				function(event) { setTimeout(function() { $.timeentry._parseTime(inst); }, 1); });
+				function(event) { setTimeout(function() { $.timeEntry._parseTime(inst); }, 1); });
 		}
 		// Allow mouse wheel usage
 		if (this._get(inst, 'useMouseWheel') && $.fn.mousewheel) {
