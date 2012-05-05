@@ -1,6 +1,6 @@
 /* http://keith-wood.name/timeEntry.html
-   Time entry for jQuery v1.4.2.
-   Written by Keith Wood (kbwood@virginbroadband.com.au) June 2007.
+   Time entry for jQuery v1.4.3.
+   Written by Keith Wood (kbwood{at}iinet.com.au) June 2007.
    Dual licensed under the GPL (http://dev.jquery.com/browser/trunk/jquery/GPL-LICENSE.txt) and 
    MIT (http://dev.jquery.com/browser/trunk/jquery/MIT-LICENSE.txt) licenses. 
    Please attribute the author if you use it. */
@@ -14,7 +14,7 @@
    Attach it with $('input selector').timeEntry(); for default settings,
    or configure it with options like:
    $('input selector').timeEntry(
-      {spinnerImage: 'timeEntry2.png', spinnerSize: [20, 20, 0]}); */
+      {spinnerImage: 'spinnerSquare.png', spinnerSize: [20, 20, 0]}); */
 
 (function($) { // Hide scope, no $ conflict
 
@@ -43,9 +43,13 @@ function TimeEntry() {
 		defaultTime: null, // The time to use if none has been set, leave at null for now
 		minTime: null, // The earliest selectable time, or null for no limit
 		maxTime: null, // The latest selectable time, or null for no limit
-		spinnerImage: 'timeEntry.png', // The URL of the images to use for the time spinner
-			// Six images packed horizontally for normal and then each button pressed
+		spinnerImage: 'spinnerDefault.png', // The URL of the images to use for the time spinner
+			// Seven images packed horizontally for normal, each button pressed, and disabled
 		spinnerSize: [20, 20, 8], // The width and height of the spinner image,
+			// and size of centre button for current time
+		spinnerBigImage: '', // The URL of the images to use for the expanded time spinner
+			// Seven images packed horizontally for normal, each button pressed, and disabled
+		spinnerBigSize: [40, 40, 16], // The width and height of the expanded spinner image,
 			// and size of centre button for current time
 		spinnerIncDecOnly: false, // True for increment/decrement buttons only, false for all
 		spinnerRepeat: [500, 250], // Initial and subsequent waits in milliseconds
@@ -118,7 +122,8 @@ $.extend(TimeEntry.prototype, {
 		}
 		if (spinner) {
 			spinner.mousedown(this._handleSpinner).mouseup(this._endSpinner).
-				mouseout(this._endSpinner).mousemove(this._describeSpinner);
+				mouseover(this._expandSpinner).mouseout(this._endSpinner).
+				mousemove(this._describeSpinner);
 		}
 	},
 
@@ -183,9 +188,7 @@ $.extend(TimeEntry.prototype, {
 		if (!$input.hasClass(this.markerClassName)) {
 			return;
 		}
-		$input.removeClass(this.markerClassName).unbind('focus.timeEntry').
-			unbind('blur.timeEntry').unbind('click.timeEntry').
-			unbind('keydown.timeEntry').unbind('keypress.timeEntry');
+		$input.removeClass(this.markerClassName).unbind('.timeEntry');
 		// check pastes
 		if ($.browser.mozilla) {
 			$input.unbind('input.timeEntry');
@@ -355,23 +358,57 @@ $.extend(TimeEntry.prototype, {
 		delta = ($.browser.opera ? -delta / Math.abs(delta) :
 			($.browser.safari ? delta / Math.abs(delta) : delta));
 		var inst = $.data(event.target, PROP_NAME);
+		if (!inst.input.val()) {
+			$.timeEntry._parseTime(inst);
+		}
 		$.timeEntry._adjustField(inst, delta);
 		event.preventDefault();
+	},
+
+	/* Expand the spinner, is possible, to make it easier to use.
+	   @param  event  (event) the mouse over event */
+	_expandSpinner: function(event) {
+		var spinner = $.timeEntry._getSpinnerTarget(event);
+		var inst = $.data($.timeEntry._getInput(spinner), PROP_NAME);
+		var spinnerBigImage = $.timeEntry._get(inst, 'spinnerBigImage');
+		if (spinnerBigImage) {
+			inst._expanded = true;
+			var offset = $(spinner).offset();
+			var spinnerSize = $.timeEntry._get(inst, 'spinnerSize');
+			var spinnerBigSize = $.timeEntry._get(inst, 'spinnerBigSize');
+			$('<div class="timeEntry_expand" style="position: absolute; left: ' +
+				(offset.left - (spinnerBigSize[0] - spinnerSize[0]) / 2) +
+				'px; top: ' + (offset.top - (spinnerBigSize[1] - spinnerSize[1]) / 2) +
+				'px; width: ' + spinnerBigSize[0] +
+				'px; height: ' + spinnerBigSize[1] + 'px; background: #fff url(' +
+				spinnerBigImage + ') no-repeat 0px 0px; z-index: 10;"></div>').
+				mousedown($.timeEntry._handleSpinner).mouseup($.timeEntry._endSpinner).
+				mouseout($.timeEntry._endExpand).mousemove($.timeEntry._describeSpinner).
+				insertAfter(spinner);
+		}
+	},
+
+	/* Locate the actual input field from the spinner.
+	   @param  spinner  (element) the current spinner
+	   @return  (element) the corresponding input */
+	_getInput: function(spinner) {
+		return $(spinner).siblings('.' + $.timeEntry.markerClassName)[0];
 	},
 
 	/* Change the title based on position within the spinner.
 	   @param  event  (event) the mouse move event */
 	_describeSpinner: function(event) {
 		var spinner = $.timeEntry._getSpinnerTarget(event);
-		var inst = $.data(spinner.previousSibling, PROP_NAME);
-		spinner.title = $.timeEntry._get(inst, 'spinnerTexts')[$.timeEntry._getSpinnerRegion(inst, event)];
+		var inst = $.data($.timeEntry._getInput(spinner), PROP_NAME);
+		spinner.title = $.timeEntry._get(inst, 'spinnerTexts')
+			[$.timeEntry._getSpinnerRegion(inst, event)];
 	},
 
 	/* Handle a click on the spinner.
 	   @param  event  (event) the mouse click event */
 	_handleSpinner: function(event) {
 		var spinner = $.timeEntry._getSpinnerTarget(event);
-		var input = spinner.previousSibling;
+		var input = $.timeEntry._getInput(spinner);
 		if ($.timeEntry._isDisabledTimeEntry(input)) {
 			return;
 		}
@@ -399,6 +436,9 @@ $.extend(TimeEntry.prototype, {
 	   @param  inst    (object) the instance settings
 	   @param  region  (number) the spinner "button" */
 	_actionSpinner: function(inst, region) {
+		if (!inst.input.val()) {
+			$.timeEntry._parseTime(inst);
+		}
 		switch (region) {
 			case 0: this._setTime(inst); break;
 			case 1: this._previousField(inst, false); break;
@@ -429,12 +469,23 @@ $.extend(TimeEntry.prototype, {
 		$.timeEntry._timer = null;
 	},
 
+	/* Tidy up after an expanded spinner.
+	   @param  event  (event) the mouse event */
+	_endExpand: function(event) {
+		$.timeEntry._timer = null;
+		var spinner = $.timeEntry._getSpinnerTarget(event);
+		var input = $.timeEntry._getInput(spinner);
+		var inst = $.data(input, PROP_NAME);
+		$(spinner).remove();
+		inst._expand = false;
+	},
+
 	/* Tidy up after a spinner click.
 	   @param  event  (event) the mouse event */
 	_endSpinner: function(event) {
 		$.timeEntry._timer = null;
 		var spinner = $.timeEntry._getSpinnerTarget(event);
-		var input = spinner.previousSibling;
+		var input = $.timeEntry._getInput(spinner);
 		var inst = $.data(input, PROP_NAME);
 		if (!$.timeEntry._isDisabledTimeEntry(input)) {
 			$.timeEntry._changeSpinner(inst, spinner, -1);
@@ -466,12 +517,12 @@ $.extend(TimeEntry.prototype, {
 			[document.documentElement.scrollLeft || document.body.scrollLeft,
 			document.documentElement.scrollTop || document.body.scrollTop]);
 		var spinnerIncDecOnly = this._get(inst, 'spinnerIncDecOnly');
-		var left = (spinnerIncDecOnly ? 99 :
-			event.clientX + scrolled[0] - pos.left - ($.browser.msie ? 1 : 0));
-		var top = event.clientY + scrolled[1] - pos.top - ($.browser.msie ? 1 : 0);
-		var spinnerSize = this._get(inst, 'spinnerSize');
-		var right = (spinnerIncDecOnly ? 99 : spinnerSize[0] - left);
-		var bottom = spinnerSize[1] - top;
+		var left = (spinnerIncDecOnly ? 99 : event.clientX + scrolled[0] -
+			pos.left - ($.browser.msie ? 2 : 0));
+		var top = event.clientY + scrolled[1] - pos.top - ($.browser.msie ? 2 : 0);
+		var spinnerSize = this._get(inst, (inst._expanded ? 'spinnerBigSize' : 'spinnerSize'));
+		var right = (spinnerIncDecOnly ? 99 : spinnerSize[0] - 1 - left);
+		var bottom = spinnerSize[1] - 1 - top;
 		if (spinnerSize[2] > 0 && Math.abs(left - right) <= spinnerSize[2] &&
 				Math.abs(top - bottom) <= spinnerSize[2]) {
 			return 0; // centre button
@@ -485,8 +536,8 @@ $.extend(TimeEntry.prototype, {
 	   @param  spinner  (element) the spinner control
 	   @param  region   (number) the spinner "button" */
 	_changeSpinner: function(inst, spinner, region) {
-		$(spinner).css('background-position',
-			'-' + ((region + 1) * this._get(inst, 'spinnerSize')[0]) + 'px 0px');
+		$(spinner).css('background-position', '-' + ((region + 1) *
+			this._get(inst, (inst._expanded ? 'spinnerBigSize' : 'spinnerSize'))[0]) + 'px 0px');
 	},
 
 	/* Find an object's position on the screen.
@@ -638,10 +689,10 @@ $.extend(TimeEntry.prototype, {
 	/* Highlight the current time field.
 	   @param  inst  (object) the instance settings */
 	_showField: function(inst) {
-		if (inst.input.is(':hidden')) {
+		var input = inst.input[0];
+		if (inst.input.is(':hidden') || $.timeEntry._lastInput != input) {
 			return;
 		}
-		var input = inst.input[0];
 		var separator = this._get(inst, 'separator');
 		var fieldSize = separator.length + 2;
 		var start = (inst._field != inst._ampmField ? (inst._field * fieldSize) :
@@ -656,7 +707,7 @@ $.extend(TimeEntry.prototype, {
 			range.moveEnd('character', end - inst.input.val().length);
 			range.select();
 		}
-		if (!input.disabled && $.timeEntry._lastInput == input) {
+		if (!input.disabled) {
 			input.focus();
 		}
 	},

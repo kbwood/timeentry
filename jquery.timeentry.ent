@@ -12,6 +12,8 @@
   time:separator          CDATA #IMPLIED
   time:show24Hours        (true | false) #IMPLIED
   time:showSeconds        (true | false) #IMPLIED
+  time:spinnerBigImage    CDATA #IMPLIED
+  time:spinnerBigSize     CDATA #IMPLIED
   time:spinnerImage       CDATA #IMPLIED
   time:spinnerIncDecOnly  (true | false) #IMPLIED
   time:spinnerRepeat      CDATA #IMPLIED
