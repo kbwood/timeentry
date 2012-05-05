@@ -1,5 +1,5 @@
 /* http://keith-wood.name/timeEntry.html
-   Time entry for jQuery v1.4.8.
+   Time entry for jQuery v1.4.9.
    Written by Keith Wood (kbwood{at}iinet.com.au) June 2007.
    Dual licensed under the GPL (http://dev.jquery.com/browser/trunk/jquery/GPL-LICENSE.txt) and 
    MIT (http://dev.jquery.com/browser/trunk/jquery/MIT-LICENSE.txt) licenses. 
@@ -213,8 +213,13 @@ $.extend(TimeEntry.prototype, {
 	_setTimeTimeEntry: function(input, time) {
 		var inst = $.data(input, PROP_NAME);
 		if (inst) {
-			this._setTime(inst, time ? (typeof time == 'object' ?
-				new Date(time.getTime()) : time) : null);
+			if (time === null || time === '') {
+				inst.input.val('');
+			}
+			else {
+				this._setTime(inst, time ? (typeof time == 'object' ?
+					new Date(time.getTime()) : time) : null);
+			}
 		}
 	},
 
@@ -386,6 +391,9 @@ $.extend(TimeEntry.prototype, {
 	_expandSpinner: function(event) {
 		var spinner = $.timeEntry._getSpinnerTarget(event);
 		var inst = $.data($.timeEntry._getInput(spinner), PROP_NAME);
+		if ($.timeEntry._isDisabledTimeEntry(inst.input[0])) {
+			return;
+		}
 		var spinnerBigImage = $.timeEntry._get(inst, 'spinnerBigImage');
 		if (spinnerBigImage) {
 			inst._expanded = true;
