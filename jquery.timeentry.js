@@ -1,5 +1,5 @@
 /* http://keith-wood.name/timeEntry.html
-   Time entry for jQuery v1.4.0.
+   Time entry for jQuery v1.4.1.
    Written by Keith Wood (kbwood@virginbroadband.com.au) June 2007.
    Dual licensed under the GPL (http://dev.jquery.com/browser/trunk/jquery/GPL-LICENSE.txt) and 
    MIT (http://dev.jquery.com/browser/trunk/jquery/MIT-LICENSE.txt) licenses. 
@@ -444,7 +444,8 @@ $.extend(TimeEntry.prototype, {
 		var pos = ($.browser.opera || $.browser.safari ?
 			$.timeEntry._findPos(spinner) : $(spinner).offset());
 		var scrolled = ($.browser.safari ? $.timeEntry._findScroll(spinner) :
-			[document.documentElement.scrollLeft, document.documentElement.scrollTop]);
+			[document.documentElement.scrollLeft || document.body.scrollLeft,
+			document.documentElement.scrollTop || document.body.scrollTop]);
 		var spinnerIncDecOnly = this._get(inst, 'spinnerIncDecOnly');
 		var left = (spinnerIncDecOnly ? 99 :
 			event.clientX + scrolled[0] - pos.left - ($.browser.msie ? 1 : 0));
