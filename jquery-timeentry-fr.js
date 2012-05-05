@@ -4,6 +4,7 @@
    Under the Creative Commons Licence http://creativecommons.org/licenses/by/3.0/
    Share or Remix it but please Attribute the author. */
 $(document).ready(function(){
-	timeEntry.show24Hours = true;
-	timeEntry.spinnerTexts = ['Maintenant', 'Précédent', 'Prochaine', 'Augmentez', 'Amoindrissez'];
+	timeEntry.regional['fr'] = {show24Hours: true, spinnerTexts: 
+		['Maintenant', 'Précédent', 'Prochaine', 'Augmentez', 'Amoindrissez']};
+	timeEntry.setDefaults(timeEntry.regional['fr']);
 });
