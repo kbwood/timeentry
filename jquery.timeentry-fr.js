@@ -4,6 +4,6 @@
 $(document).ready(function() {
 	$.timeEntry.regional['fr'] = {show24Hours: true, separator: ':',
 		ampmPrefix: '', ampmNames: ['AM', 'PM'],
-		spinnerTexts: ['Maintenant', 'Précédent', 'Prochaine', 'Augmentez', 'Amoindrissez']};
+		spinnerTexts: ['Maintenant', 'Précédent', 'Suivant', 'Augmentez', 'Amoindrissez']};
 	$.timeEntry.setDefaults($.timeEntry.regional['fr']);
 });

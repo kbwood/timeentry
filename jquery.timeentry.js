@@ -1,6 +1,6 @@
 /* http://keith-wood.name/timeEntry.html
-   Time entry for jQuery v1.2.6.
-   Written by Keith Wood (kbwood@iprimus.com.au) June 2007.
+   Time entry for jQuery v1.3.0.
+   Written by Keith Wood (kbwood@virginbroadband.com.au) June 2007.
    Dual licensed under the GPL (http://dev.jquery.com/browser/trunk/jquery/GPL-LICENSE.txt) and 
    MIT (http://dev.jquery.com/browser/trunk/jquery/MIT-LICENSE.txt) licenses. 
    Please attribute the author if you use it. */
@@ -39,6 +39,7 @@ function TimeEntry() {
 		appendText: '', // Display text following the input box, e.g. showing the format
 		showSeconds: false, // True to show seconds as well, false for hours/minutes only
 		timeSteps: [1, 1, 1], // Steps for each of hours/minutes/seconds when incrementing/decrementing
+		initialField: 0, // The field to highlight initially, 0 = hours, 1 = minutes, ...
 		useMouseWheel: true, // True to use mouse wheel for increment/decrement if possible,
 			// false to never use it
 		minTime: null, // The earliest selectable time, or null for no limit
@@ -85,7 +86,7 @@ $.extend(TimeEntry.prototype, {
 		if ($.timeEntry._lastInput == input) { // already here
 			return;
 		}
-		if ($.timeEntry.isDisabled(input)) {
+		if ($.timeEntry._isDisabledTimeEntry(input)) {
 			return;
 		}
 		var inst = $.timeEntry._getInst(input._timeId);
@@ -202,7 +203,7 @@ $.extend(TimeEntry.prototype, {
 	/* Attach the time entry handler to an input field. */
 	_connectTimeEntry: function(target, inst) {
 		var input = $(target);
-		if (this._hasClass(input, this.markerClassName)) {
+		if (input.is('.' + this.markerClassName)) {
 			return;
 		}
 		var spinnerImage = inst._get('spinnerImage');
@@ -240,60 +241,44 @@ $.extend(TimeEntry.prototype, {
 		}
 	},
 
-	/* Does this element have a particular class? */
-	_hasClass: function(element, className) {
-		var classes = element.attr('class');
-		return (classes && classes.indexOf(className) > -1);
-	},
-
 	/* Enable a time entry input and any associated spinner.
-	   @param  inputs  string - selector for input field(s) or
-	                   element - single input field or
-	                   object - jQuery collection of input fields
+	   @param  input  element - single input field
 	   @return void */
-	enableFor: function(inputs) {
-		this._disableFor(inputs, false);
+	_enableTimeEntry: function(input) {
+		this._enableDisable(input, false);
 	},
 
 	/* Disable a time entry input and any associated spinner.
-	   @param  inputs  string - selector for input field(s) or
-	                   element - single input field or
-	                   object - jQuery collection of input fields
+	   @param  input  element - single input field
 	   @return void */
-	disableFor: function(inputs) {
-		this._disableFor(inputs, true);
+	_disableTimeEntry: function(input) {
+		this._enableDisable(input, true);
 	},
 
 	/* Enable or disable a time entry input and any associated spinner.
-	   @param  inputs   string - selector for input field(s) or
-	                    element - single input field or
-	                    object - jQuery collection of input fields
+	   @param  input    element - single input field
 	   @param  disable  boolean - true to disable, false to enable
 	   @return void */
-	_disableFor: function(inputs, disable) {
-		inputs = (inputs.jquery ? inputs : $(inputs));
-		inputs.each(function() {
-			this.disabled = disable;
-			var inst = $.timeEntry._getInst(this._timeId);
-			if (this.nextSibling && this.nextSibling.nodeName.toLowerCase() == 'span') {
-				$.timeEntry._changeSpinner(inst, this.nextSibling, (disable ? 5 : -1));
-			}
-			var $this = this;
-			$.timeEntry._disabledInputs = $.map($.timeEntry._disabledInputs,
-				function(value) { return (value == $this ? null : value); }); // delete entry
-			if (disable) {
-				$.timeEntry._disabledInputs[$.timeEntry._disabledInputs.length] = this;
-			}
-		});
+	_enableDisable: function(input, disable) {
+		var inst = $.timeEntry._getInst(input._timeId);
+		if (!inst) {
+			return;
+		}
+		input.disabled = disable;
+		if (input.nextSibling && input.nextSibling.nodeName.toLowerCase() == 'span') {
+			$.timeEntry._changeSpinner(inst, input.nextSibling, (disable ? 5 : -1));
+		}
+		$.timeEntry._disabledInputs = $.map($.timeEntry._disabledInputs,
+			function(value) { return (value == input ? null : value); }); // delete entry
+		if (disable) {
+			$.timeEntry._disabledInputs[$.timeEntry._disabledInputs.length] = input;
+		}
 	},
 
 	/* Check whether an input field has been disabled.
-	   @param  input  element - input field to check or
-	                  jQuery - jQuery collection containing input field or
-	                  string - jQuery selector for the input field
+	   @param  input  element - input field to check
 	   @return true if this field has been disabled, false if it is enabled */
-	isDisabled: function(input) {
-		input = (input.jquery ? input[0] : (typeof input == 'string' ? $(input)[0] : input));
+	_isDisabledTimeEntry: function(input) {
 		for (var i = 0; i < this._disabledInputs.length; i++) {
 			if (this._disabledInputs[i] == input) {
 				return true;
@@ -302,13 +287,8 @@ $.extend(TimeEntry.prototype, {
 		return false;
 	},
 
-	/* Reconfigure the settings for a time entry input field.
-	   @param  input     element - input field to update settings for or
-	                     jQuery - jQuery collection containing input field or
-	                     string - jQuery selector for the input field
-	   @param  settings  object - the new settings */
-	reconfigureFor: function(input, settings) {
-		input = (input.jquery ? input : $(input))[0];
+	/* Reconfigure the settings for a time entry field. */
+	_changeTimeEntry: function(input, settings) {
 		var inst = this._getInst(input._timeId);
 		if (inst) {
 			var currentTime = inst._extractTime();
@@ -319,13 +299,36 @@ $.extend(TimeEntry.prototype, {
 		}
 	},
 
+	/* Remove the time entry functionality from an input. */
+	_destroyTimeEntry: function(input) {
+		$input = $(input);
+		if (!$input.is('.' + this.markerClassName)) {
+			return;
+		}
+		input.parentNode.parentNode.replaceChild(input, input.parentNode);
+		$input.removeClass(this.markerClassName).unbind('focus', this._doFocus).
+			unbind('blur', this._doBlur).unbind('dblclick', this._doDblClick).
+			unbind('keydown', this._doKeyDown).unbind('keypress', this._doKeyPress);
+		// check pastes
+		if ($.browser.mozilla) {
+			$input.unbind('input');
+		}
+		if ($.browser.msie) {
+			$input.unbind('paste');
+		}
+		if ($.fn.mousewheel) {
+			$input.unmousewheel();
+		}
+		this._inst[input._timeId] = null;
+		input._timeId = undefined;
+		this._disabledInputs = $.map(this._disabledInputs,
+			function(value) { return (value == input ? null : value); }); // delete entry
+	},
+
 	/* Initialise the current time for a time entry input field.
-	   @param  input  element - input field to update or
-	                  jQuery - jQuery collection containing input field or
-	                  string - jQuery selector for the input field
+	   @param  input  element - input field to update
 	   @param  time   Date - the new time (year/month/day ignored) or null for now */
-	setTimeFor: function(input, time) {
-		input = (input.jquery ? input[0] : (typeof input == 'string' ? $(input)[0] : input));
+	_setTimeTimeEntry: function(input, time) {
 		var inst = this._getInst(input._timeId);
 		if (inst) {
 			inst._input = $(input);
@@ -334,12 +337,9 @@ $.extend(TimeEntry.prototype, {
 	},
 
 	/* Retrieve the current time for a time entry input field.
-	   @param  input  element - input field to update or
-	                  jQuery - jQuery collection containing input field or
-	                  string - jQuery selector for the input field
+	   @param  input  element - input field to update
 	   @return Date with the set time (year/month/day zero) or null if none */
-	getTimeFor: function(input) {
-		input = (input.jquery ? input[0] : (typeof input == 'string' ? $(input)[0] : input));
+	_getTimeTimeEntry: function(input) {
 		var inst = this._getInst(input._timeId);
 		var currentTime = (inst ? inst._extractTime() : null);
 		return (!currentTime ? null :
@@ -357,7 +357,7 @@ $.extend(TimeEntry.prototype, {
 	_handleSpinner: function(event) {
 		var spinner = $.timeEntry._getSpinnerTarget(event);
 		var input = spinner.previousSibling;
-		if ($.timeEntry.isDisabled(input)) {
+		if ($.timeEntry._isDisabledTimeEntry(input)) {
 			return;
 		}
 		if (input == $.timeEntry._blurredInput) {
@@ -408,7 +408,7 @@ $.extend(TimeEntry.prototype, {
 	_endSpinner: function(event) {
 		var spinner = $.timeEntry._getSpinnerTarget(event);
 		var inst = $.timeEntry._getInst(spinner._timeId);
-		if (!$.timeEntry.isDisabled(spinner.previousSibling)) {
+		if (!$.timeEntry._isDisabledTimeEntry(spinner.previousSibling)) {
 			$.timeEntry._changeSpinner(inst, spinner, -1);
 		}
 		if (!$.browser.opera) {
@@ -525,7 +525,8 @@ $.extend(TimeEntryInstance.prototype, {
 		this._secondField = (showSeconds ? 2 : -1);
 		this._ampmField = (this._get('show24Hours') ? -1 : (showSeconds ? 3 : 2));
 		this._lastChr = '';
-		this._field = 0;
+		this._field = Math.max(0, Math.min(
+			Math.max(1, this._secondField, this._ampmField), this._get('initialField')));
 		if (this._input.val() != '') {
 			this._showTime();
 		}
@@ -739,30 +740,40 @@ function extendRemove(target, props) {
 }
 
 /* Attach the time entry functionality to a jQuery selection.
-   @param  settings  object - the new settings to use for this time entry instance (anonymous)
+   @param  command  string - the command to run (optional, default 'attach')
+   @param  options  object - the new settings to use for these countdown instances
    @return jQuery object - for chaining further calls */
-$.fn.timeEntry = function(settings) {
+$.fn.timeEntry = function(options) {
+	var otherArgs = Array.prototype.slice.call(arguments, 1);
+	if (typeof options == 'string' && (options == 'isDisabled' || options == 'getTime')) {
+		return $.timeEntry['_' + options + 'TimeEntry'].apply($.timeEntry, [this[0]].concat(otherArgs));
+	}
 	return this.each(function() {
 		var nodeName = this.nodeName.toLowerCase();
 		if (nodeName == 'input') {
-			// check for settings on the control itself - in namespace 'time:'
-			var inlineSettings = null;
-			for (attrName in $.timeEntry._defaults) {
-				var attrValue = this.getAttribute('time:' + attrName);
-				if (attrValue) {
-					inlineSettings = inlineSettings || {};
-					try {
-						inlineSettings[attrName] = eval(attrValue);
-					}
-					catch (err) {
-						inlineSettings[attrName] = attrValue;
+			if (typeof options == 'string') {
+				$.timeEntry['_' + options + 'TimeEntry'].apply($.timeEntry, [this].concat(otherArgs));
+			}
+			else {
+				// check for settings on the control itself - in namespace 'time:'
+				var inlineSettings = null;
+				for (attrName in $.timeEntry._defaults) {
+					var attrValue = this.getAttribute('time:' + attrName);
+					if (attrValue) {
+						inlineSettings = inlineSettings || {};
+						try {
+							inlineSettings[attrName] = eval(attrValue);
+						}
+						catch (err) {
+							inlineSettings[attrName] = attrValue;
+						}
 					}
 				}
+				var inst = (inst && !inlineSettings ? inst :
+					new TimeEntryInstance(!inlineSettings ? options :
+					$.extend(inlineSettings, options)));
+				$.timeEntry._connectTimeEntry(this, inst);
 			}
-			var inst = (inst && !inlineSettings ? inst :
-				new TimeEntryInstance(!inlineSettings ? settings :
-				$.extend(inlineSettings, settings)));
-			$.timeEntry._connectTimeEntry(this, inst);
 		} 
 	});
 };
