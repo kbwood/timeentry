@@ -1,5 +1,5 @@
 /* http://home.iprimus.com.au/kbwood/jquery/timeEntry.html
-   Time entry for jQuery v1.1.
+   Time entry for jQuery v1.1.1.
    Written by Keith Wood (kbwood@iprimus.com.au) June 2007.
    Under the Creative Commons Licence http://creativecommons.org/licenses/by/3.0/
    Share or Remix it but please Attribute the author. */
@@ -53,12 +53,9 @@ var timeEntry = {
 		inputs.each(function() {
 			this.disabled = false;
 			$('../img.timeEntry_control', this).each(function() { $(this).css('opacity', '1.0'); });
-			for (var i = 0; i < timeEntry.disabledInputs.length; i++) {
-				if (timeEntry.disabledInputs[i] == this) {
-					timeEntry.disabledInputs[i] = null;
-					break;
-				}
-			}
+			var $this = this;
+			timeEntry.disabledInputs = $.map(timeEntry.disabledInputs, 
+				function(value) { return (value == $this ? null : value); }); // delete entry
 		});
 		return false;
 	},
@@ -69,17 +66,10 @@ var timeEntry = {
 		inputs.each(function() {
 			this.disabled = true;
 			$('../img.timeEntry_control', this).each(function() { $(this).css('opacity', '0.5'); });
-			var j = timeEntry.disabledInputs.length;
-			for (var i = 0; i < timeEntry.disabledInputs.length; i++) {
-				if (timeEntry.disabledInputs[i] == this) {
-					j = i;
-					break;
-				}
-				if (!timeEntry.disabledInputs[i] && j == timeEntry.disabledInputs.length) {
-					j = i;
-				}
-			}
-			timeEntry.disabledInputs[j] = this;
+			var $this = this;
+			timeEntry.disabledInputs = $.map(timeEntry.disabledInputs, 
+				function(value) { return (value == $this ? null : value); }); // delete entry
+			timeEntry.disabledInputs[timeEntry.disabledInputs.length] = this;
 		});
 		return false;
 	},
@@ -161,19 +151,19 @@ var timeEntry = {
 			timeEntry.nextField(false);
 		}
 		else if (chr >= '0' && chr <= '9') { // allow direct entry of time
-			value = (timeEntry.lastChr + chr) * 1;
-			hour = (timeEntry.field == 0 && ((timeEntry.show24Hours && value < 24) || (value >= 1 && value <= 12)) ? 
+			var value = (timeEntry.lastChr + chr) * 1;
+			var hour = (timeEntry.field == 0 && ((timeEntry.show24Hours && value < 24) || (value >= 1 && value <= 12)) ? 
 				value : timeEntry.selectedHour);
-			minute = (timeEntry.field == 1 && value < 60 ? value : timeEntry.selectedMinute);
-			second = (timeEntry.field == timeEntry.secondField && value < 60 ? value : timeEntry.selectedSecond);
-			fields = timeEntry.constrainTime([hour, minute, second]);
+			var minute = (timeEntry.field == 1 && value < 60 ? value : timeEntry.selectedMinute);
+			var second = (timeEntry.field == timeEntry.secondField && value < 60 ? value : timeEntry.selectedSecond);
+			var fields = timeEntry.constrainTime([hour, minute, second]);
 			timeEntry.setTime(new Date(0, 0, 0, fields[0], fields[1], fields[2]));
 			timeEntry.lastChr = chr;
 		}
 		else if (!timeEntry.show24Hours) { // set am/pm based on first char of names
 			if ((chr == timeEntry.ampmNames[0].substring(0, 1).toLowerCase() && timeEntry.selectedHour >= 12) ||
 					(chr == timeEntry.ampmNames[1].substring(0, 1).toLowerCase() && timeEntry.selectedHour < 12)) { 
-				saveField = timeEntry.field;
+				var saveField = timeEntry.field;
 				timeEntry.field = timeEntry.ampmField;
 				timeEntry.adjustField(+1);
 				timeEntry.field = saveField;
@@ -185,17 +175,20 @@ var timeEntry = {
 	
 	/* Extract the time value from the input field, or default to now. */
 	parseTime: function() {
-		var currentTime = this.input.val().split(this.separator);
+		var value = this.input.val();
+		var currentTime = value.split(this.separator);
 		if (currentTime.length >= 2) {
+			var isAM = (value.indexOf(this.ampmNames[0]) > -1);
+			var isPM = (value.indexOf(this.ampmNames[1]) > -1);
 			this.selectedHour = parseInt(this.trimNumber(currentTime[0]));
 			this.selectedHour = (isNaN(this.selectedHour) ? 0 : this.selectedHour);
-			this.selectedHour += (this.input.val().indexOf(this.ampmNames[1]) > -1 ? 12 : 0);
+			this.selectedHour = ((isAM || isPM) && this.selectedHour == 12 ? 0 : this.selectedHour) + (isPM ? 12 : 0);
 			this.selectedMinute = parseInt(this.trimNumber(currentTime[1]));
 			this.selectedMinute = (isNaN(this.selectedMinute) ? 0 : this.selectedMinute);
 			this.selectedSecond = (currentTime.length >= 3 ? parseInt(this.trimNumber(currentTime[2])) : 0);
 			this.selectedSecond = (isNaN(this.selectedSecond) || !this.showSeconds ? 0 : this.selectedSecond);
 		} else {
-			now = this.constrainTime();
+			var now = this.constrainTime();
 			this.selectedHour = now[0];
 			this.selectedMinute = now[1];
 			this.selectedSecond = (this.showSeconds ? now[2] : 0);
@@ -216,8 +209,10 @@ var timeEntry = {
 	/* Constrain the given/current time to the time steps. */
 	constrainTime: function(fields) {
 		var specified = (fields != null);
-		var now = new Date();
-		var fields = (specified ? fields : [now.getHours(), now.getMinutes(), now.getSeconds()]);
+		if (!specified) {
+			var now = new Date();
+			fields = [now.getHours(), now.getMinutes(), now.getSeconds()];
+		}
 		var reset = false;
 		for (var i = 0; i < this.timeSteps.length; i++) {
 			if (reset) {
@@ -270,7 +265,7 @@ var timeEntry = {
 	
 	/* Ensure displayed single number has a leading zero. */
 	formatNumber: function(value) {
-		return (value < 10 ? '0' + value : '' + value);
+		return (value < 10 ? '0' : '') + value;
 	},
 	
 	/* Change the title based on position within the spinner. */
