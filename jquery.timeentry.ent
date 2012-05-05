@@ -2,7 +2,11 @@
   time:ampmNames          CDATA #IMPLIED
   time:ampmPrefix         CDATA #IMPLIED
   time:appendText         CDATA #IMPLIED
+  time:beforeSetTime      CDATA #IMPLIED
+  time:beforeShow         CDATA #IMPLIED
+  time:defaultTime        CDATA #IMPLIED
   time:fieldSettings      CDATA #IMPLIED
+  time:initialField       CDATA #IMPLIED
   time:maxTime            CDATA #IMPLIED
   time:minTime            CDATA #IMPLIED
   time:separator          CDATA #IMPLIED
