@@ -1,5 +1,5 @@
 /* http://keith-wood.name/timeEntry.html
-   Time entry for jQuery v1.4.7.
+   Time entry for jQuery v1.4.8.
    Written by Keith Wood (kbwood{at}iinet.com.au) June 2007.
    Dual licensed under the GPL (http://dev.jquery.com/browser/trunk/jquery/GPL-LICENSE.txt) and 
    MIT (http://dev.jquery.com/browser/trunk/jquery/MIT-LICENSE.txt) licenses. 
@@ -169,10 +169,17 @@ $.extend(TimeEntry.prototype, {
 
 	/* Reconfigure the settings for a time entry field.
 	   @param  input    (element) input field to change
-	   @param  options  (object) new settings to add */
-	_changeTimeEntry: function(input, options) {
+	   @param  options  (object) new settings to add or
+	                    (string) an individual setting name
+	   @param  value    (any) the individual setting's value */
+	_changeTimeEntry: function(input, options, value) {
 		var inst = $.data(input, PROP_NAME);
 		if (inst) {
+			if (typeof options == 'string') {
+				var name = options;
+				options = {};
+				options[name] = value;
+			}
 			var currentTime = this._extractTime(inst);
 			extendRemove(inst.options, options || {});
 			if (currentTime) {
@@ -212,13 +219,23 @@ $.extend(TimeEntry.prototype, {
 	},
 
 	/* Retrieve the current time for a time entry input field.
-	   @param  input  (element) input field to update
+	   @param  input  (element) input field to examine
 	   @return  (Date) current time (year/month/day zero) or null if none */
 	_getTimeTimeEntry: function(input) {
 		var inst = $.data(input, PROP_NAME);
 		var currentTime = (inst ? this._extractTime(inst) : null);
 		return (!currentTime ? null :
 			new Date(0, 0, 0, currentTime[0], currentTime[1], currentTime[2]));
+	},
+
+	/* Retrieve the millisecond offset for the current time.
+	   @param  input  (element) input field to examine
+	   @return  (number) the time as milliseconds offset or zero if none */
+	_getOffsetTimeEntry: function(input) {
+		var inst = $.data(input, PROP_NAME);
+		var currentTime = (inst ? this._extractTime(inst) : null);
+		return (!currentTime ? 0 :
+			(currentTime[0] * 3600 + currentTime[1] * 60 + currentTime[2]) * 1000);
 	},
 
 	/* Initialise time entry.
@@ -626,12 +643,13 @@ $.extend(TimeEntry.prototype, {
 		}
 	},
 
-	/* Extract the time value from the input field as an array of values, or default to null.
-	   @param  inst  (object) the instance settings
+	/* Extract the time value from a string as an array of values, or default to null.
+	   @param  inst   (object) the instance settings
+	   @param  value  (string) the time value to parse
 	   @return  (number[3]) the time components (hours, minutes, seconds)
 	            or null if no value */
-	_extractTime: function(inst) {
-		var value = inst.input.val();
+	_extractTime: function(inst, value) {
+		value = value || inst.input.val();
 		var separator = this._get(inst, 'separator');
 		var currentTime = value.split(separator);
 		if (separator == '' && value != '') {
@@ -664,7 +682,7 @@ $.extend(TimeEntry.prototype, {
 	_constrainTime: function(inst, fields) {
 		var specified = (fields != null);
 		if (!specified) {
-			var now = this._determineTime(this._get(inst, 'defaultTime')) || new Date();
+			var now = this._determineTime(inst, this._get(inst, 'defaultTime')) || new Date();
 			fields = [now.getHours(), now.getMinutes(), now.getSeconds()];
 		}
 		var reset = false;
@@ -777,14 +795,14 @@ $.extend(TimeEntry.prototype, {
 	                 (number) offset in seconds from now or
 					 (string) units and periods of offsets from now */
 	_setTime: function(inst, time) {
-		time = this._determineTime(time);
+		time = this._determineTime(inst, time);
 		var fields = this._constrainTime(inst, time ?
 			[time.getHours(), time.getMinutes(), time.getSeconds()] : null);
 		time = new Date(0, 0, 0, fields[0], fields[1], fields[2]);
 		// Normalise to base date
 		var time = this._normaliseTime(time);
-		var minTime = this._normaliseTime(this._determineTime(this._get(inst, 'minTime')));
-		var maxTime = this._normaliseTime(this._determineTime(this._get(inst, 'maxTime')));
+		var minTime = this._normaliseTime(this._determineTime(inst, this._get(inst, 'minTime')));
+		var maxTime = this._normaliseTime(this._determineTime(inst, this._get(inst, 'maxTime')));
 		// Ensure it is within the bounds set
 		time = (minTime && time < minTime ? minTime :
 			(maxTime && time > maxTime ? maxTime : time));
@@ -801,34 +819,51 @@ $.extend(TimeEntry.prototype, {
 		$.data(inst.input[0], PROP_NAME, inst);
 	},
 
+	/* Normalise time object to a common date.
+	   @param  time  (Date) the original time
+	   @return  (Date) the normalised time */
+	_normaliseTime: function(time) {
+		if (!time) {
+			return null;
+		}
+		time.setFullYear(1900);
+		time.setMonth(0);
+		time.setDate(0);
+		return time;
+	},
+
 	/* A time may be specified as an exact value or a relative one.
+	   @param  inst     (object) the instance settings
 	   @param  setting  (Date) an actual time or
 	                    (number) offset in seconds from now or
 	                    (string) units and periods of offsets from now
 	   @return  (Date) the calculated time */
-	_determineTime: function(setting) {
+	_determineTime: function(inst, setting) {
 		var offsetNumeric = function(offset) { // E.g. +300, -2
 			var time = new Date();
 			time.setTime(time.getTime() + offset * 1000);
 			return time;
 		};
-		var offsetString = function(offset) { // E.g. '+2m', '-4h', '+3h +30m'
+		var offsetString = function(offset) { // E.g. '+2m', '-4h', '+3h +30m' or '12:34:56PM'
+			var fields = $.timeEntry._extractTime(inst, offset); // Actual time?
 			var time = new Date();
-			var hour = time.getHours();
-			var minute = time.getMinutes();
-			var second = time.getSeconds();
-			var pattern = /([+-]?[0-9]+)\s*(s|S|m|M|h|H)?/g;
-			var matches = pattern.exec(offset);
-			while (matches) {
-				switch (matches[2] || 's') {
-					case 's' : case 'S' :
-						second += parseInt(matches[1], 10); break;
-					case 'm' : case 'M' :
-						minute += parseInt(matches[1], 10); break;
-					case 'h' : case 'H' :
-						hour += parseInt(matches[1], 10); break;
+			var hour = (fields ? fields[0] : time.getHours());
+			var minute = (fields ? fields[1] : time.getMinutes());
+			var second = (fields ? fields[2] : time.getSeconds());
+			if (!fields) {
+				var pattern = /([+-]?[0-9]+)\s*(s|S|m|M|h|H)?/g;
+				var matches = pattern.exec(offset);
+				while (matches) {
+					switch (matches[2] || 's') {
+						case 's' : case 'S' :
+							second += parseInt(matches[1], 10); break;
+						case 'm' : case 'M' :
+							minute += parseInt(matches[1], 10); break;
+						case 'h' : case 'H' :
+							hour += parseInt(matches[1], 10); break;
+					}
+					matches = pattern.exec(offset);
 				}
-				matches = pattern.exec(offset);
 			}
 			time = new Date(0, 0, 10, hour, minute, second, 0);
 			if (/^!/.test(offset)) { // No wrapping
@@ -843,19 +878,6 @@ $.extend(TimeEntry.prototype, {
 		};
 		return (setting ? (typeof setting == 'string' ? offsetString(setting) :
 			(typeof setting == 'number' ? offsetNumeric(setting) : setting)) : null);
-	},
-
-	/* Normalise time object to a common date.
-	   @param  time  (Date) the original time
-	   @return  (Date) the normalised time */
-	_normaliseTime: function(time) {
-		if (!time) {
-			return null;
-		}
-		time.setFullYear(1900);
-		time.setMonth(0);
-		time.setDate(0);
-		return time;
 	},
 
 	/* Update time based on keystroke entered.
@@ -883,6 +905,7 @@ $.extend(TimeEntry.prototype, {
 			inst._lastChr = chr;
 		}
 		else if (!this._get(inst, 'show24Hours')) { // Set am/pm based on first char of names
+			chr = chr.toLowerCase();
 			var ampmNames = this._get(inst, 'ampmNames');
 			if ((chr == ampmNames[0].substring(0, 1).toLowerCase() &&
 					inst._selectedHour >= 12) ||
@@ -912,13 +935,16 @@ function extendRemove(target, props) {
 	return target;
 }
 
+// Commands that don't return a jQuery object
+var getters = ['getOffset', 'getTime', 'isDisabled'];
+
 /* Attach the time entry functionality to a jQuery selection.
    @param  command  (string) the command to run (optional, default 'attach')
    @param  options  (object) the new settings to use for these countdown instances (optional)
    @return  (jQuery) for chaining further calls */
 $.fn.timeEntry = function(options) {
 	var otherArgs = Array.prototype.slice.call(arguments, 1);
-	if (typeof options == 'string' && (options == 'isDisabled' || options == 'getTime')) {
+	if (typeof options == 'string' && $.inArray(options, getters) > -1) {
 		return $.timeEntry['_' + options + 'TimeEntry'].apply($.timeEntry, [this[0]].concat(otherArgs));
 	}
 	return this.each(function() {
