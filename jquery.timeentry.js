@@ -1,5 +1,5 @@
 /* http://keith-wood.name/timeEntry.html
-   Time entry for jQuery v1.4.4.
+   Time entry for jQuery v1.4.5.
    Written by Keith Wood (kbwood{at}iinet.com.au) June 2007.
    Dual licensed under the GPL (http://dev.jquery.com/browser/trunk/jquery/GPL-LICENSE.txt) and 
    MIT (http://dev.jquery.com/browser/trunk/jquery/MIT-LICENSE.txt) licenses. 
@@ -356,6 +356,7 @@ $.extend(TimeEntry.prototype, {
 		delta = ($.browser.opera ? -delta / Math.abs(delta) :
 			($.browser.safari ? delta / Math.abs(delta) : delta));
 		var inst = $.data(event.target, PROP_NAME);
+		inst.input.focus();
 		if (!inst.input.val()) {
 			$.timeEntry._parseTime(inst);
 		}
@@ -486,7 +487,7 @@ $.extend(TimeEntry.prototype, {
 		var input = $.timeEntry._getInput(spinner);
 		var inst = $.data(input, PROP_NAME);
 		$(spinner).remove();
-		inst._expand = false;
+		inst._expanded = false;
 	},
 
 	/* Tidy up after a spinner click.
@@ -923,20 +924,8 @@ $.fn.timeEntry = function(options) {
 				$.timeEntry['_' + options + 'TimeEntry'].apply($.timeEntry, [this].concat(otherArgs));
 			}
 			else {
-				// Check for settings on the control itself - in namespace 'time:'
-				var inlineSettings = {};
-				for (attrName in $.timeEntry._defaults) {
-					var attrValue = this.getAttribute('time:' + attrName);
-					if (attrValue) {
-						inlineSettings = inlineSettings || {};
-						try {
-							inlineSettings[attrName] = eval(attrValue);
-						}
-						catch (err) {
-							inlineSettings[attrName] = attrValue;
-						}
-					}
-				}
+				// Check for settings on the control itself
+				var inlineSettings = ($.fn.metadata ? $(this).metadata() : {});
 				$.timeEntry._connectTimeEntry(this, $.extend(inlineSettings, options));
 			}
 		} 
