@@ -1,5 +1,5 @@
-/* http://home.iprimus.com.au/kbwood/jquery/timeEntry.html
-   Time entry for jQuery v1.2.3.
+/* http://keith-wood.name/timeEntry.html
+   Time entry for jQuery v1.2.4.
    Written by Keith Wood (kbwood@iprimus.com.au) June 2007.
    Dual licensed under the GPL (http://www.gnu.org/licenses/gpl-3.0.txt) and 
    CC (http://creativecommons.org/licenses/by/3.0/) licenses. 
@@ -14,7 +14,7 @@
    Attach it with $('input selector').timeEntry(); for default settings,
    or configure it with options like:
    $('input selector').timeEntry(
-      {spinnerImage: 'timeEntry2.gif', spinnerSize: [20, 20, 0]}); */
+      {spinnerImage: 'timeEntry2.png', spinnerSize: [20, 20, 0]}); */
 
 var timeEntry = null;
 
@@ -131,7 +131,7 @@ $.extend(TimeEntry.prototype, {
 			}
 			input.value = value; // restore original value
 		}
-		else if ($.browser.opera) { // use input select range
+		else if ($.browser.opera || $.browser.safari) { // use input select range
 			var value = input.value;
 			for (var field = 0; field <= Math.max(1, inst._secondField, inst._ampmField); field++) {
 				var start = (field != inst._ampmField ? (field * fieldSize) :
@@ -211,13 +211,14 @@ $.extend(TimeEntry.prototype, {
 		var spinnerText = inst._get('spinnerText');
 		var spinnerSize = inst._get('spinnerSize');
 		var appendText = inst._get('appendText');
-		input.wrap('<span class="timeEntry_wrap"></span>').
-			after((spinnerImage ? '<span class="timeEntry_control" _timeid="' + inst._id +
+		var spinner = (!spinnerImage ? null : 
+			$('<span class="timeEntry_control" _timeid="' + inst._id +
 			'" style="display: inline-block; background: url(\'' + spinnerImage + '\') 0 0 no-repeat; ' +
 			'width: ' + spinnerSize[0] + 'px; height: ' + spinnerSize[1] + 'px;' +
 			($.browser.mozilla ? ' padding-left: ' + spinnerSize[0] + 
-			'px; padding-top: ' + (spinnerSize[1] - 18) + 'px;' : '') + '"></span>' : '') +
-			(appendText ? '<span class="timeEntry_append">' + appendText + '</span>' : ''));
+			'px; padding-top: ' + (spinnerSize[1] - 18) + 'px;' : '') + '"></span>'));
+		input.wrap('<span class="timeEntry_wrap"></span>').after(spinner || '').
+			after(appendText ? '<span class="timeEntry_append">' + appendText + '</span>' : '');
 		input.addClass(this.markerClassName).focus(this._doFocus).blur(this._doBlur).
 			dblclick(this._doDblClick).keydown(this._doKeyDown).keypress(this._doKeyPress);
 		// check pastes
@@ -233,10 +234,9 @@ $.extend(TimeEntry.prototype, {
 			input.mousewheel(this._doMouseWheel);
 		}
 		input[0]._timeId = inst._id;
-		var spinner = $('../span.timeEntry_control', input);
-		spinner.mousedown(this._handleSpinner).mouseup(this._endSpinner).
-			mouseout(this._endSpinner).mousemove(this._describeSpinner);
-		if (spinner[0]) {
+		if (spinner) {
+			spinner.mousedown(this._handleSpinner).mouseup(this._endSpinner).
+				mouseout(this._endSpinner).mousemove(this._describeSpinner);
 			spinner[0]._timeId = inst._id;
 		}
 	},
@@ -340,7 +340,7 @@ $.extend(TimeEntry.prototype, {
 	/* Handle a click on the spinner. */
 	_handleSpinner: function(event) {
 		var spinner = timeEntry._getSpinnerTarget(event);
-		var input = $('../input', spinner)[0];
+		var input = spinner.previousSibling;
 		if (timeEntry.isDisabled(input)) {
 			return;
 		}
@@ -429,7 +429,7 @@ $.extend(TimeEntry.prototype, {
 	/* Change the spinner image depending on button clicked. */
 	_changeSpinner: function(inst, spinner, region) {
 		$(spinner).css('background-position',
-			'-' + ((region + 1) * inst._get('spinnerSize')[0]) + ' 0');
+			'-' + ((region + 1) * inst._get('spinnerSize')[0]) + 'px 0px');
 	},
 
 	/* Find an object's position on the screen. */
@@ -452,12 +452,8 @@ $.extend(TimeEntry.prototype, {
 
 	/* Find an object's scroll offset on the screen. */
 	_findScroll: function(obj) {
-		var curLeft = curTop = 0;
-		while (obj = obj.offsetParent) {
-			curLeft += obj.scrollLeft;
-			curTop += obj.scrollTop;
-		}
-		return [curLeft, curTop];
+		return [Math.max(document.documentElement.scrollLeft, document.body.scrollLeft),
+			Math.max(document.documentElement.scrollTop, document.body.scrollTop)];
 	}
 });
 

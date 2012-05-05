@@ -1,0 +1,18 @@
+<!ATTLIST input 
+  time:ampmNames          CDATA #IMPLIED
+  time:ampmPrefix         CDATA #IMPLIED
+  time:appendText         CDATA #IMPLIED
+  time:fieldSettings      CDATA #IMPLIED
+  time:maxTime            CDATA #IMPLIED
+  time:minTime            CDATA #IMPLIED
+  time:separator          CDATA #IMPLIED
+  time:show24Hours        (true | false) #IMPLIED
+  time:showSeconds        (true | false) #IMPLIED
+  time:spinnerImage       CDATA #IMPLIED
+  time:spinnerIncDecOnly  (true | false) #IMPLIED
+  time:spinnerRepeat      CDATA #IMPLIED
+  time:spinnerSize        CDATA #IMPLIED
+  time:spinnerTexts       CDATA #IMPLIED
+  time:timeSteps          CDATA #IMPLIED
+  time:useMouseWheel      (true | false) #IMPLIED
+>
