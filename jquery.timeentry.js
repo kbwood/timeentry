@@ -1,9 +1,9 @@
 /* http://keith-wood.name/timeEntry.html
-   Time entry for jQuery v1.2.5.
+   Time entry for jQuery v1.2.6.
    Written by Keith Wood (kbwood@iprimus.com.au) June 2007.
-   Dual licensed under the GPL (http://www.gnu.org/licenses/gpl-3.0.txt) and 
-   CC (http://creativecommons.org/licenses/by/3.0/) licenses. 
-   "Share or Remix it but please Attribute the authors." */
+   Dual licensed under the GPL (http://dev.jquery.com/browser/trunk/jquery/GPL-LICENSE.txt) and 
+   MIT (http://dev.jquery.com/browser/trunk/jquery/MIT-LICENSE.txt) licenses. 
+   Please attribute the author if you use it. */
 
 /* Turn an input field into an entry point for a time value.
    The time can be entered via directly typing the value,
@@ -470,8 +470,22 @@ $.extend(TimeEntry.prototype, {
 
 	/* Find an object's scroll offset on the screen. */
 	_findScroll: function(obj) {
-		return [Math.max(document.documentElement.scrollLeft, document.body.scrollLeft),
-			Math.max(document.documentElement.scrollTop, document.body.scrollTop)];
+		var isFixed = false;
+		$(obj).parents().each(function() {
+			isFixed |= $(this).css('position') == 'fixed';
+		});
+		if (isFixed && !$.browser.opera) {
+			return [0, 0];
+		}
+		var scrollLeft = ($.browser.opera ? document.body.scrollLeft : obj.scrollLeft);
+		var scrollTop = ($.browser.opera ? document.body.scrollTop : obj.scrollTop);;
+		if (!$.browser.opera) {
+			while (obj = obj.parentNode) {
+				scrollLeft += obj.scrollLeft || 0;
+				scrollTop += obj.scrollTop || 0;
+			}
+		}
+		return [scrollLeft, scrollTop];
 	}
 });
 
