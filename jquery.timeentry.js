@@ -1,5 +1,5 @@
 /* http://keith-wood.name/timeEntry.html
-   Time entry for jQuery v1.4.5.
+   Time entry for jQuery v1.4.6.
    Written by Keith Wood (kbwood{at}iinet.com.au) June 2007.
    Dual licensed under the GPL (http://dev.jquery.com/browser/trunk/jquery/GPL-LICENSE.txt) and 
    MIT (http://dev.jquery.com/browser/trunk/jquery/MIT-LICENSE.txt) licenses. 
@@ -364,7 +364,7 @@ $.extend(TimeEntry.prototype, {
 		event.preventDefault();
 	},
 
-	/* Expand the spinner, is possible, to make it easier to use.
+	/* Expand the spinner, if possible, to make it easier to use.
 	   @param  event  (event) the mouse over event */
 	_expandSpinner: function(event) {
 		var spinner = $.timeEntry._getSpinnerTarget(event);
@@ -388,8 +388,8 @@ $.extend(TimeEntry.prototype, {
 				(offset.left - (spinnerBigSize[0] - spinnerSize[0]) / 2 -
 				(relative ? relative.left : 0)) + 'px; top: ' + (offset.top -
 				(spinnerBigSize[1] - spinnerSize[1]) / 2 - (relative ? relative.top : 0)) +
-				'px; width: ' + spinnerBigSize[0] +
-				'px; height: ' + spinnerBigSize[1] + 'px; background: #fff url(' +
+				'px; width: ' + spinnerBigSize[0] + 'px; height: ' +
+				spinnerBigSize[1] + 'px; background: transparent url(' +
 				spinnerBigImage + ') no-repeat 0px 0px; z-index: 10;"></div>').
 				mousedown($.timeEntry._handleSpinner).mouseup($.timeEntry._endSpinner).
 				mouseout($.timeEntry._endExpand).mousemove($.timeEntry._describeSpinner).
@@ -866,14 +866,18 @@ $.extend(TimeEntry.prototype, {
 			this._changeField(inst, +1, false);
 		}
 		else if (chr >= '0' && chr <= '9') { // Allow direct entry of time
+			var key = parseInt(chr, 10);
 			var value = parseInt(inst._lastChr + chr, 10);
 			var show24Hours = this._get(inst, 'show24Hours');
-			var hour = (inst._field == 0 && ((show24Hours && value < 24) ||
-				(value >= 1 && value <= 12)) ?
-				value + (!show24Hours && inst._selectedHour >= 12 ? 12 : 0) : inst._selectedHour);
-			var minute = (inst._field == 1 && value < 60 ? value : inst._selectedMinute);
-			var second = (inst._field == inst._secondField && value < 60 ?
-				value : inst._selectedSecond);
+			var hour = (inst._field != 0 ? inst._selectedHour :
+				(show24Hours ? (value < 24 ? value : key) :
+				(value >= 1 && value <= 12 ? value :
+				(key > 0 ? key : inst._selectedHour)) % 12 +
+				(inst._selectedHour >= 12 ? 12 : 0)));
+			var minute = (inst._field != 1 ? inst._selectedMinute :
+				(value < 60 ? value : key));
+			var second = (inst._field != inst._secondField ? inst._selectedSecond :
+				(value < 60 ? value : key));
 			var fields = this._constrainTime(inst, [hour, minute, second]);
 			this._setTime(inst, new Date(0, 0, 0, fields[0], fields[1], fields[2]));
 			inst._lastChr = chr;
