@@ -1,8 +1,9 @@
 /* http://home.iprimus.com.au/kbwood/jquery/timeEntry.html
-   Time entry for jQuery v1.2.2.
+   Time entry for jQuery v1.2.3.
    Written by Keith Wood (kbwood@iprimus.com.au) June 2007.
-   Under the Creative Commons Licence http://creativecommons.org/licenses/by/3.0/
-   Share or Remix it but please Attribute the author. */
+   Dual licensed under the GPL (http://www.gnu.org/licenses/gpl-3.0.txt) and 
+   CC (http://creativecommons.org/licenses/by/3.0/) licenses. 
+   "Share or Remix it but please Attribute the authors." */
 
 /* Turn an input field into an entry point for a time value.
    The time can be entered via directly typing the value,
@@ -58,6 +59,9 @@ function TimeEntry() {
 }
 
 $.extend(TimeEntry.prototype, {
+	/* Class name added to elements to indicate already configured with time entry. */
+	markerClassName: 'hasTimeEntry',
+	
 	/* Register a new time entry instance - with custom settings. */
 	_register: function(inst) {
 		var id = this._nextId++;
@@ -74,7 +78,7 @@ $.extend(TimeEntry.prototype, {
 	   @param  settings  object - the new settings to use as defaults (anonymous object)
 	   @return void */
 	setDefaults: function(settings) {
-		$.extend(this._defaults, settings || {});
+		extendRemove(this._defaults, settings || {});
 	},
 
 	/* Initialise time entry. */
@@ -91,7 +95,7 @@ $.extend(TimeEntry.prototype, {
 		timeEntry._lastInput = input;
 		timeEntry._blurredInput = null;
 		var fieldSettings = inst._get('fieldSettings');
-		$.extend(inst._settings, (fieldSettings ? fieldSettings(input) : {}));
+		extendRemove(inst._settings, (fieldSettings ? fieldSettings(input) : {}));
 		inst._parseTime();
 	},
 
@@ -144,7 +148,7 @@ $.extend(TimeEntry.prototype, {
 	/* Handle keystrokes in the field. */
 	_doKeyDown: function(event) {
 		if (event.keyCode >= 48) { // >= '0'
-			return false;
+			return true;
 		}
 		var inst = timeEntry._getInst(this._timeId);
 		switch (event.keyCode) {
@@ -200,6 +204,9 @@ $.extend(TimeEntry.prototype, {
 	/* Attach the time entry handler to an input field. */
 	_connectTimeEntry: function(target, inst) {
 		var input = $(target);
+		if (this._hasClass(input, this.markerClassName)) {
+			return;
+		}
 		var spinnerImage = inst._get('spinnerImage');
 		var spinnerText = inst._get('spinnerText');
 		var spinnerSize = inst._get('spinnerSize');
@@ -211,8 +218,8 @@ $.extend(TimeEntry.prototype, {
 			($.browser.mozilla ? ' padding-left: ' + spinnerSize[0] + 
 			'px; padding-top: ' + (spinnerSize[1] - 18) + 'px;' : '') + '"></span>' : '') +
 			(appendText ? '<span class="timeEntry_append">' + appendText + '</span>' : ''));
-		input.focus(this._doFocus).blur(this._doBlur).dblclick(this._doDblClick).
-			keydown(this._doKeyDown).keypress(this._doKeyPress);
+		input.addClass(this.markerClassName).focus(this._doFocus).blur(this._doBlur).
+			dblclick(this._doDblClick).keydown(this._doKeyDown).keypress(this._doKeyPress);
 		// check pastes
 		if ($.browser.mozilla) {
 			input.bind('input', function(event) { inst._parseTime(); });
@@ -232,6 +239,12 @@ $.extend(TimeEntry.prototype, {
 		if (spinner[0]) {
 			spinner[0]._timeId = inst._id;
 		}
+	},
+
+	/* Does this element have a particular class? */
+	_hasClass: function(element, className) {
+		var classes = element.attr('class');
+		return (classes && classes.indexOf(className) > -1);
 	},
 
 	/* Enable a time entry input and any associated spinner.
@@ -280,13 +293,16 @@ $.extend(TimeEntry.prototype, {
 	},
 
 	/* Reconfigure the settings for a time entry input field.
-	   @param  input     element - input field to update settings for
+	   @param  input     element - input field to update settings for or
+	                     jQuery - jQuery collection containing input field or
+	                     string - ID of the time entry field
 	   @param  settings  object - the new settings */
 	reconfigureFor: function(input, settings) {
+		input = (input.jquery ? input : $(input))[0];
 		var inst = this._getInst(input._timeId);
 		if (inst) {
 			var currentTime = inst._extractTime();
-			$.extend(inst._settings, settings || {});
+			extendRemove(inst._settings, settings || {});
 			if (currentTime) {
 				inst._setTime(new Date(0, 0, 0, currentTime[0], currentTime[1], currentTime[2]));
 			}
@@ -409,7 +425,7 @@ $.extend(TimeEntry.prototype, {
 		var min = Math.min(left, top, right, bottom);
 		return (min == left ? 1 : (min == right ? 2 : (min == top ? 3 : 4))); // nearest edge
 	},
-	
+
 	/* Change the spinner image depending on button clicked. */
 	_changeSpinner: function(inst, spinner, region) {
 		$(spinner).css('background-position',
@@ -454,7 +470,7 @@ function TimeEntryInstance(settings) {
 	this._selectedSecond = 0; // The currently selected second
 	this._input = null; // The attached input field
 	// customise the time entry object - uses manager defaults if not overridden
-	this._settings = $.extend({}, settings || {}); // clone
+	this._settings = extendRemove({}, settings || {}); // clone
 }
 
 $.extend(TimeEntryInstance.prototype, {
@@ -680,6 +696,17 @@ $.extend(TimeEntryInstance.prototype, {
 		}
 	}
 });
+
+/* jQuery extend now ignores nulls! */
+function extendRemove(target, props) {
+	$.extend(target, props);
+	for (var name in props) {
+		if (props[name] == null) {
+			target[name] = null;
+		}
+	}
+	return target;
+}
 
 /* Attach the time entry functionality to a jQuery selection.
    @param  settings  object - the new settings to use for this time entry instance (anonymous)
