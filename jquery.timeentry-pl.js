@@ -1,9 +1,9 @@
-/* http://home.iprimus.com.au/kbwood/jquery/timeEntry.html
-   Polish initialisation for the jQuery time entry extension. */
-/* Polish translation by Jacek Wysocki (jacek.wysocki@gmail.com). */
-$(document).ready(function(){
-	timeEntry.regional['pl'] = {show24Hours: true, separator: ':',
+/* http://keith-wood.name/timeEntry.html
+   Polish initialisation for the jQuery time entry extension. 
+   Polish translation by Jacek Wysocki (jacek.wysocki@gmail.com). */
+$(document).ready(function() {
+	$.timeEntry.regional['pl'] = {show24Hours: true, separator: ':',
 		ampmPrefix: '', ampmNames: ['AM', 'PM'],
 		spinnerTexts: ['Teraz', 'Poprzednie pole', 'Następne pole', 'Zwiększ wartość', 'Zmniejsz wartość']};
-	timeEntry.setDefaults(timeEntry.regional['pl']);
+	$.timeEntry.setDefaults($.timeEntry.regional['pl']);
 });
