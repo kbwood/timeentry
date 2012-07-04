@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+  <link rel="stylesheet" href="http://code.jquery.com/qunit/git/qunit.css" type="text/css" />
+  <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+  <script type="text/javascript" src="jquery.metadata.js"></script>
+  <script type="text/javascript" src="../jquery.timeentry.js"></script>
+  <script type="text/javascript" src="http://code.jquery.com/qunit/git/qunit.js"></script>
+  <script>
+    $(document).ready(function() {
+      test("test metadata object is unmodified", function() {
+        $("#timeEntryInput").timeEntry({ showSeconds: true });
+
+        var metadata = $("#timeEntryInput").metadata();  
+        deepEqual(metadata, {foo: 'bar'}, "expect timeEntry options not be added to metadata");
+      });
+    });
+  </script>
+</head>
+<body>
+  <div id="qunit"></div>
+  <div id="qunit-fixture">
+    <input type="text" id="timeEntryInput" class="{foo: 'bar'}" />
+  </div>
+</body>
+</html>
