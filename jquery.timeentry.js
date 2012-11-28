@@ -713,7 +713,7 @@ $.extend(TimeEntry.prototype, {
 		var show24Hours = this._get(inst, 'show24Hours');
 		var separator = this._get(inst, 'separator');
 		var currentTime = (this._formatNumber(show24Hours ? inst._selectedHour :
-			((inst._selectedHour + 11) % 12) + 1) + separator +
+			((inst._selectedHour + 11) % 12) + 1, ' ') + separator +
 			this._formatNumber(inst._selectedMinute) +
 			(this._get(inst, 'showSeconds') ? separator +
 			this._formatNumber(inst._selectedSecond) : '') +
@@ -752,8 +752,9 @@ $.extend(TimeEntry.prototype, {
 	/* Ensure displayed single number has a leading zero.
 	   @param  value  (number) current value
 	   @return  (string) number with at least two digits */
-	_formatNumber: function(value) {
-		return (value < 10 ? '0' : '') + value;
+	_formatNumber: function(value, prefix) {
+		if(prefix == null) prefix = '0'
+		return (value < 10 ? prefix : '') + value;
 	},
 
 	/* Update the input field and notify listeners.
