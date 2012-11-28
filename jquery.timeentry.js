@@ -1,8 +1,8 @@
 /* http://keith-wood.name/timeEntry.html
    Time entry for jQuery v1.4.9.
    Written by Keith Wood (kbwood{at}iinet.com.au) June 2007.
-   Dual licensed under the GPL (http://dev.jquery.com/browser/trunk/jquery/GPL-LICENSE.txt) and 
-   MIT (http://dev.jquery.com/browser/trunk/jquery/MIT-LICENSE.txt) licenses. 
+   Dual licensed under the GPL (http://dev.jquery.com/browser/trunk/jquery/GPL-LICENSE.txt) and
+   MIT (http://dev.jquery.com/browser/trunk/jquery/MIT-LICENSE.txt) licenses.
    Please attribute the author if you use it. */
 
 /* Turn an input field into an entry point for a time value.
@@ -97,7 +97,7 @@ $.extend(TimeEntry.prototype, {
 		var spinnerText = this._get(inst, 'spinnerText');
 		var spinnerSize = this._get(inst, 'spinnerSize');
 		var appendText = this._get(inst, 'appendText');
-		var spinner = (!spinnerImage ? null : 
+		var spinner = (!spinnerImage ? null :
 			$('<span class="timeEntry_control" style="display: inline-block; ' +
 			'background: url(\'' + spinnerImage + '\') 0 0 no-repeat; ' +
 			'width: ' + spinnerSize[0] + 'px; height: ' + spinnerSize[1] + 'px;' +
@@ -115,7 +115,7 @@ $.extend(TimeEntry.prototype, {
 			input.bind('input.timeEntry', function(event) { $.timeEntry._parseTime(inst); });
 		}
 		if ($.browser.msie) {
-			input.bind('paste.timeEntry', 
+			input.bind('paste.timeEntry',
 				function(event) { setTimeout(function() { $.timeEntry._parseTime(inst); }, 1); });
 		}
 		// Allow mouse wheel usage
@@ -679,7 +679,7 @@ $.extend(TimeEntry.prototype, {
 				parseInt(currentTime[2], 10) : 0);
 			second = (isNaN(second) || !this._get(inst, 'showSeconds') ? 0 : second);
 			return this._constrainTime(inst, [hour, minute, second]);
-		} 
+		}
 		return null;
 	},
 
@@ -931,7 +931,7 @@ $.extend(TimeEntry.prototype, {
 
 /* jQuery extend now ignores nulls!
    @param  target  (object) the object to update
-   @param  props   (object) the new settings 
+   @param  props   (object) the new settings
    @return  (object) the updated object */
 function extendRemove(target, props) {
 	$.extend(target, props);
@@ -966,7 +966,7 @@ $.fn.timeEntry = function(options) {
 				var inlineSettings = ($.fn.metadata ? $(this).metadata() : {});
 				$.timeEntry._connectTimeEntry(this, $.extend(inlineSettings, options));
 			}
-		} 
+		}
 	});
 };
 
