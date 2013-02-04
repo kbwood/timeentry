@@ -108,7 +108,7 @@ $.extend(TimeEntry.prototype, {
 			input.bind('input.' + this.propertyName, function(event) { plugin._parseTime(inst); });
 		}
 		if ($.browser.msie) {
-			input.bind('paste.' + this.propertyName, 
+			input.bind('paste.' + this.propertyName,
 				function(event) { setTimeout(function() { plugin._parseTime(inst); }, 1); });
 		}
 		this._optionPlugin(target, options);
@@ -679,7 +679,7 @@ $.extend(TimeEntry.prototype, {
 				parseInt(currentTime[2], 10) : 0);
 			second = (isNaN(second) || !inst.options.showSeconds ? 0 : second);
 			return this._constrainTime(inst, [hour, minute, second]);
-		} 
+		}
 		return null;
 	},
 
@@ -711,7 +711,7 @@ $.extend(TimeEntry.prototype, {
 	   @param  inst  (object) the instance settings */
 	_showTime: function(inst) {
 		var currentTime = (this._formatNumber(inst.options.show24Hours ? inst._selectedHour :
-			((inst._selectedHour + 11) % 12) + 1) + inst.options.separator +
+			((inst._selectedHour + 11) % 12) + 1, ' ') + inst.options.separator +
 			this._formatNumber(inst._selectedMinute) +
 			(inst.options.showSeconds ? inst.options.separator +
 			this._formatNumber(inst._selectedSecond) : '') +
@@ -750,8 +750,9 @@ $.extend(TimeEntry.prototype, {
 	/* Ensure displayed single number has a leading zero.
 	   @param  value  (number) current value
 	   @return  (string) number with at least two digits */
-	_formatNumber: function(value) {
-		return (value < 10 ? '0' : '') + value;
+	_formatNumber: function(value, prefix) {
+		if(prefix == null) prefix = '0'
+		return (value < 10 ? prefix : '') + value;
 	},
 
 	/* Update the input field and notify listeners.
@@ -965,7 +966,7 @@ $.fn.timeEntry = function(options) {
 				// Check for settings on the control itself
 				var inlineSettings = ($.fn.metadata ? $(this).metadata() : {});
 			plugin._attachPlugin(this, $.extend(inlineSettings, options || {}));
-		} 
+		}
 	});
 };
 
