@@ -1,5 +1,5 @@
 /* http://keith-wood.name/timeEntry.html
-   Time entry for jQuery v1.5.0.
+   Time entry for jQuery v1.5.1.
    Written by Keith Wood (kbwood{at}iinet.com.au) June 2007.
    Licensed under the MIT (https://github.com/jquery/jquery/blob/master/MIT-LICENSE.txt) license.
    Please attribute the author if you use it. */
@@ -69,8 +69,6 @@ $.extend(TimeEntry.prototype, {
 	/* Name of the data property for instance settings. */
 	propertyName: 'timeEntry',
 
-	/* Class name for the time entry wrapper. */
-	_wrapClass: 'timeEntry_wrap',
 	/* Class name for the appended content. */
 	_appendClass: 'timeEntry_append',
 	/* Class name for the time entry control. */
@@ -102,15 +100,9 @@ $.extend(TimeEntry.prototype, {
 			bind('click.' + this.propertyName, this._doClick).
 			bind('keydown.' + this.propertyName, this._doKeyDown).
 			bind('keypress.' + this.propertyName, this._doKeyPress).
-			wrap('<span class="' + this._wrapClass + '"></span>');
-		// Check pastes
-		if ($.browser.mozilla) {
-			input.bind('input.' + this.propertyName, function(event) { plugin._parseTime(inst); });
-		}
-		if ($.browser.msie) {
-			input.bind('paste.' + this.propertyName, 
-				function(event) { setTimeout(function() { plugin._parseTime(inst); }, 1); });
-		}
+			bind('paste.' + this.propertyName, function(event) { // Check pastes
+				setTimeout(function() { plugin._parseTime(inst); }, 1);
+			});
 		this._optionPlugin(target, options);
 	},
 
@@ -141,6 +133,7 @@ $.extend(TimeEntry.prototype, {
 		}
 		var currentTime = this._extractTime(inst);
 		$.extend(inst.options, options);
+		inst._field = 0;
 		if (currentTime) {
 			this._setTime(inst, new Date(0, 0, 0, currentTime[0], currentTime[1], currentTime[2]));
 		}
@@ -154,10 +147,7 @@ $.extend(TimeEntry.prototype, {
 		var spinner = (!inst.options.spinnerImage ? null :
 			$('<span class="' + this._controlClass + '" style="display: inline-block; ' +
 			'background: url(\'' + inst.options.spinnerImage + '\') 0 0 no-repeat; width: ' +
-			inst.options.spinnerSize[0] + 'px; height: ' + inst.options.spinnerSize[1] + 'px;' +
-			($.browser.mozilla && $.browser.version < '1.9' ? // FF 2- (Win)
-			' padding-left: ' + inst.options.spinnerSize[0] + 'px; padding-bottom: ' +
-			(inst.options.spinnerSize[1] - 18) + 'px;' : '') + '"></span>'));
+			inst.options.spinnerSize[0] + 'px; height: ' + inst.options.spinnerSize[1] + 'px;"></span>'));
 		target.after(inst.options.appendText ? '<span class="' + this._appendClass + '">' +
 			inst.options.appendText + '</span>' : '').after(spinner || '');
 		// Allow mouse wheel usage
@@ -223,12 +213,12 @@ $.extend(TimeEntry.prototype, {
 		}
 		this._disabledInputs = $.map(this._disabledInputs,
 			function(value) { return (value == target[0] ? null : value); }); // Delete entry
-		target.parent().replaceWith(target);
+		target.siblings('.' + this._appendClass + ',.' + this._controlClass).remove();
 	},
 
 	/* Initialise the current time for a time entry input field.
 	   @param  target  (element) input field to update
-	   @param  time   (Date) the new time (year/month/day ignored) or null for now */
+	   @param  time    (Date) the new time (year/month/day ignored) or null for now */
 	_setTimePlugin: function(target, time) {
 		var inst = $.data(target, this.propertyName);
 		if (inst) {
@@ -393,8 +383,6 @@ $.extend(TimeEntry.prototype, {
 		if (plugin._isDisabledPlugin(event.target)) {
 			return;
 		}
-		delta = ($.browser.opera ? -delta / Math.abs(delta) :
-			($.browser.safari ? delta / Math.abs(delta) : delta));
 		var inst = $.data(event.target, plugin.propertyName);
 		inst.input.focus();
 		if (!inst.input.val()) {
@@ -561,14 +549,11 @@ $.extend(TimeEntry.prototype, {
 	   @return  (number) the spinner "button" number */
 	_getSpinnerRegion: function(inst, event) {
 		var spinner = this._getSpinnerTarget(event);
-		var pos = ($.browser.opera || $.browser.safari ?
-			plugin._findPos(spinner) : $(spinner).offset());
-		var scrolled = ($.browser.safari ? plugin._findScroll(spinner) :
-			[document.documentElement.scrollLeft || document.body.scrollLeft,
-			document.documentElement.scrollTop || document.body.scrollTop]);
-		var left = (inst.options.spinnerIncDecOnly ? 99 : event.clientX + scrolled[0] -
-			pos.left - ($.browser.msie ? 2 : 0));
-		var top = event.clientY + scrolled[1] - pos.top - ($.browser.msie ? 2 : 0);
+		var pos = $(spinner).offset();
+		var scrolled = [document.documentElement.scrollLeft || document.body.scrollLeft,
+			document.documentElement.scrollTop || document.body.scrollTop];
+		var left = (inst.options.spinnerIncDecOnly ? 99 : event.clientX + scrolled[0] - pos.left);
+		var top = event.clientY + scrolled[1] - pos.top;
 		var spinnerSize = inst.options[inst._expanded ? 'spinnerBigSize' : 'spinnerSize'];
 		var right = (inst.options.spinnerIncDecOnly ? 99 : spinnerSize[0] - 1 - left);
 		var bottom = spinnerSize[1] - 1 - top;
@@ -587,46 +572,6 @@ $.extend(TimeEntry.prototype, {
 	_changeSpinner: function(inst, spinner, region) {
 		$(spinner).css('background-position', '-' + ((region + 1) *
 			inst.options[inst._expanded ? 'spinnerBigSize' : 'spinnerSize'][0]) + 'px 0px');
-	},
-
-	/* Find an object's position on the screen.
-	   @param  obj  (element) the control
-	   @return  (object) position as .left and .top */
-	_findPos: function(obj) {
-		var curLeft = curTop = 0;
-		if (obj.offsetParent) {
-			curLeft = obj.offsetLeft;
-			curTop = obj.offsetTop;
-			while (obj = obj.offsetParent) {
-				var origCurLeft = curLeft;
-				curLeft += obj.offsetLeft;
-				if (curLeft < 0) {
-					curLeft = origCurLeft;
-				}
-				curTop += obj.offsetTop;
-			}
-		}
-		return {left: curLeft, top: curTop};
-	},
-
-	/* Find an object's scroll offset on the screen.
-	   @param  obj  (element) the control
-	   @return  (number[]) offset as [left, top] */
-	_findScroll: function(obj) {
-		var isFixed = false;
-		$(obj).parents().each(function() {
-			isFixed |= $(this).css('position') == 'fixed';
-		});
-		if (isFixed) {
-			return [0, 0];
-		}
-		var scrollLeft = obj.scrollLeft;
-		var scrollTop = obj.scrollTop;
-		while (obj = obj.parentNode) {
-			scrollLeft += obj.scrollLeft || 0;
-			scrollTop += obj.scrollTop || 0;
-		}
-		return [scrollLeft, scrollTop];
 	},
 
 	/* Extract the time value from the input field, or default to now.
@@ -908,8 +853,8 @@ $.extend(TimeEntry.prototype, {
 				this._changeField(inst, +1, false);
 			}
 			else {
-			inst._lastChr = chr;
-		}
+				inst._lastChr = chr;
+			}
 		}
 		else if (!inst.options.show24Hours) { // Set am/pm based on first char of names
 			chr = chr.toLowerCase();
@@ -954,18 +899,18 @@ $.fn.timeEntry = function(options) {
 			apply(plugin, [this[0]].concat(otherArgs));
 	}
 	return this.each(function() {
-			if (typeof options == 'string') {
+		if (typeof options == 'string') {
 			if (!plugin['_' + options + 'Plugin']) {
 				throw 'Unknown command: ' + options;
 			}
 			plugin['_' + options + 'Plugin'].
 				apply(plugin, [this].concat(otherArgs));
-			}
-			else {
-				// Check for settings on the control itself
-				var inlineSettings = ($.fn.metadata ? $(this).metadata() : {});
-			plugin._attachPlugin(this, $.extend(inlineSettings, options || {}));
-		} 
+		}
+		else {
+			// Check for settings on the control itself
+			var inlineSettings = ($.fn.metadata ? $(this).metadata() : {});
+			plugin._attachPlugin(this, $.extend({}, inlineSettings, options || {}));
+		}
 	});
 };
 
