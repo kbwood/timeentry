@@ -56,9 +56,10 @@ function TimeEntry() {
 			// for repeats on the spinner buttons
 		beforeShow: null, // Function that takes an input field and
 			// returns a set of custom settings for the time entry
-		beforeSetTime: null // Function that runs before updating the time,
+		beforeSetTime: null, // Function that runs before updating the time,
 			// takes the old and new times, and minimum and maximum times as parameters,
 			// and returns an adjusted time if necessary
+		hourLeadingZero: true // True to use a leading zero before hours, false to use a space.
 	};
 	$.extend(this._defaults, this.regional['']);
 }
@@ -656,7 +657,7 @@ $.extend(TimeEntry.prototype, {
 	   @param  inst  (object) the instance settings */
 	_showTime: function(inst) {
 		var currentTime = (this._formatNumber(inst.options.show24Hours ? inst._selectedHour :
-			((inst._selectedHour + 11) % 12) + 1) + inst.options.separator +
+			((inst._selectedHour + 11) % 12) + 1, inst.options.hourLeadingZero) + inst.options.separator +
 			this._formatNumber(inst._selectedMinute) +
 			(inst.options.showSeconds ? inst.options.separator +
 			this._formatNumber(inst._selectedSecond) : '') +
@@ -692,11 +693,14 @@ $.extend(TimeEntry.prototype, {
 		}
 	},
 
-	/* Ensure displayed single number has a leading zero.
+	/* Ensure displayed single number has a leading zero or space.
 	   @param  value  (number) current value
+	   @param  leadingZero (boolean) true to use a zero, false for a space.
 	   @return  (string) number with at least two digits */
-	_formatNumber: function(value) {
-		return (value < 10 ? '0' : '') + value;
+	_formatNumber: function(value, leadingZero) {
+		var prefix = '0'
+		if(leadingZero === false) prefix = ' '
+		return (value < 10 ? prefix : '') + value;
 	},
 
 	/* Update the input field and notify listeners.
