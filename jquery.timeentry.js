@@ -298,7 +298,7 @@ $.extend(TimeEntry.prototype, {
 				}
 			}
 			else if (input.createTextRange) { // Check against bounding boxes
-				var src = $(event.srcElement);
+				var src = $(event.target || event.srcElement);
 				var range = input.createTextRange();
 				var convert = function(value) {
 					return {thin: 2, medium: 4, thick: 6}[value] || value;
