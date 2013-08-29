@@ -43,6 +43,7 @@ function TimeEntry() {
 		defaultTime: null, // The time to use if none has been set, leave at null for now
 		minTime: null, // The earliest selectable time, or null for no limit
 		maxTime: null, // The latest selectable time, or null for no limit
+		spinAround: true, // Indicates if time should spin around, if false there is no transition earlier than 00:00 and later that 23:59
 		spinnerImage: 'spinnerDefault.png', // The URL of the images to use for the time spinner
 			// Seven images packed horizontally for normal, each button pressed, and disabled
 		spinnerSize: [20, 20, 8], // The width and height of the spinner image,
@@ -746,6 +747,12 @@ $.extend(TimeEntry.prototype, {
 					 (string) units and periods of offsets from now */
 	_setTime: function(inst, time) {
 		time = this._determineTime(time, inst);
+		// Ensure if time is not spinning around if not allowed
+		if( ! inst.options.spinAround ) {
+			var normaliseTime = this._normaliseTime(new Date(time));
+			if(normaliseTime.getDate() != time.getDate())
+				time = this._getTimePlugin(inst.input[0]);
+		}
 		var fields = this._constrainTime(inst, time ?
 			[time.getHours(), time.getMinutes(), time.getSeconds()] : null);
 		time = new Date(0, 0, 0, fields[0], fields[1], fields[2]);
