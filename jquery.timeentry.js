@@ -1,5 +1,5 @@
 /* http://keith-wood.name/timeEntry.html
-   Time entry for jQuery v2.0.0.
+   Time entry for jQuery v2.0.1.
    Written by Keith Wood (kbwood{at}iinet.com.au) June 2007.
    Available under the MIT (https://github.com/jquery/jquery/blob/master/MIT-LICENSE.txt) license.
    Please attribute the author if you use it. */
@@ -60,23 +60,28 @@
 			
 		/** Default settings for the plugin.
 			@property [appendText=''] {string} Display text following the input box, e.g. showing the format.
-			@property [showSeconds=false] {boolean} True to show seconds as well, false for hours/minutes only.
+			@property [showSeconds=false] {boolean} <code>true</code> to show seconds as well,
+						<code>false</code> for hours/minutes only.
+			@property [unlimitedHours=false] {boolean} <code>true</code> to allow entry of more than 24 hours,
+						<code>false</code> to restrict to one day.
 			@property [timeSteps=[1,1,1]] {number[]} Steps for each of hours/minutes/seconds when incrementing/decrementing.
 			@property [initialField=null] {number} The field to highlight initially (0 = hours, 1 = minutes, ...),
 						or <code>null</code> for none.
-			@property [noSeparatorEntry=false] {boolean} True to move to next sub-field after two digits entry.
-			@property [tabToExit=false] {boolean} True for tab key to go to next element,
-						false for tab key to step through internal fields.
-			@property [useMouseWheel=true] {boolean} True to use mouse wheel for increment/decrement if possible,
-						false to never use it.
+			@property [noSeparatorEntry=false] {boolean} <code>true</code> to move to next sub-field after two digits entry.
+			@property [tabToExit=false] {boolean} <code>true</code> for tab key to go to next element,
+						<code>false</code> for tab key to step through internal fields.
+			@property [useMouseWheel=true] {boolean} <code>true</code> to use mouse wheel for increment/decrement if possible,
+						<code>false</code> to never use it.
 			@property [defaultTime=null] {Date|number|string} The time to use if none has been set,
 						or <code>null</code> for now. Specify as a <code>Date</code> object, as a number of seconds
 						offset from now, or as a string of offsets from now, using 'H' for hours,
 						'M' for minutes, 'S' for seconds.
-			@property [minTime=null] {Date|number|string} The earliest selectable time, or <code>null</code> for no limit.
-						See <code>defaultTime</code> for possible formats.
-			@property [maxTime=null] {Date|number|string} The latest selectable time, or <code>null</code> for no limit.
-						See <code>defaultTime</code> for possible formats.
+			@property [minTime=null] {Date|number|string|number[]} The earliest selectable time,
+						or <code>null</code> for no limit. See <code>defaultTime</code> for possible formats,
+						use array of hours, minutes, seconds for <code>unlimitedHours</code>.
+			@property [maxTime=null] {Date|number|string|number[]} The latest selectable time,
+						or <code>null</code> for no limit. See <code>defaultTime</code> for possible formats,
+						use array of hours, minutes, seconds for <code>unlimitedHours</code>.
 			@property [spinnerImage='spinnerDefault.png'] {string} The URL of the images to use for the time spinner -
 						seven images packed horizontally for normal, each button pressed
 						(centre, previous, next, increment, decrement), and disabled.
@@ -87,7 +92,7 @@
 						(centre, previous, next, increment, decrement), and disabled.
 			@property [spinnerBigSize=[40,40,16]] {number[]} The width and height of the expanded spinner image,
 						and size of centre button for current time.
-			@property [spinnerIncDecOnly=false] {boolean} True for increment/decrement buttons only, false for all.
+			@property [spinnerIncDecOnly=false] {boolean} <code>true</code> for increment/decrement buttons only, <code>false</code> for all.
 			@property [spinnerRepeat=[500,250]] {number[]} Initial and subsequent waits in milliseconds
 						for repeats on the spinner buttons.
 			@property [beforeShow=null] {beforeShowCallback} Function that takes an input field and
@@ -99,6 +104,7 @@
 		defaultOptions: {
 			appendText: '',
 			showSeconds: false,
+			unlimitedHours: false,
 			timeSteps: [1, 1, 1],
 			initialField: null,
 			noSeparatorEntry: false,
@@ -120,7 +126,7 @@
 		/** Localisations for the plugin.
 			Entries are objects indexed by the language code ('' being the default US/English).
 			Each object has the following attributes.
-			@property [show24Hours=false] {boolean} True to use 24 hour time, false for 12 hour (AM/PM).
+			@property [show24Hours=false] {boolean} <code>true</code> to use 24 hour time, <code>false</code> for 12 hour (AM/PM).
 			@property [separator=':'] {string} The separator between time fields.
 			@property [ampmPrefix=''] {string} The separator before the AM/PM text.
 			@property [ampmNames=['AM','PM']] {string[]} Names of morning/evening markers.
@@ -162,6 +168,7 @@
 		_optionsChanged: function(elem, inst, options) {
 			var currentTime = this._extractTime(inst);
 			$.extend(inst.options, options);
+			inst.options.show24Hours = inst.options.show24Hours || inst.options.unlimitedHours;
 			inst._field = 0;
 			if (currentTime) {
 				this._setTime(inst, new Date(0, 0, 0, currentTime[0], currentTime[1], currentTime[2]));
@@ -207,7 +214,7 @@
 		/** Enable or disable a time entry input and any associated spinner.
 			@private
 			@param elem {Element} The single input field.
-			@param disable {boolean} True to disable, false to enable. */
+			@param disable {boolean} <code>true</code> to disable, <code>false</code> to enable. */
 		_enableDisable: function(elem, disable) {
 			var inst = this._getInst(elem);
 			if (!inst) {
@@ -226,7 +233,7 @@
 
 		/** Check whether an input field has been disabled.
 			@param elem {Element} The input field to check.
-			@return {boolean} True if this field has been disabled, false if it is enabled.
+			@return {boolean} <code>true</code> if this field has been disabled, <code>false</code> if it is enabled.
 			@example if ($(selector).dateEntry('isDisabled')) {...} */
 		isDisabled: function(elem) {
 			return $.inArray(elem, this._disabledInputs) > -1;
@@ -257,8 +264,8 @@
 					$(elem).val('');
 				}
 				else {
-					this._setTime(inst, time ? (typeof time === 'object' ?
-						new Date(time.getTime()) : time) : null);
+					this._setTime(inst, time ? ($.isArray(time) ? time :
+						(typeof time === 'object' ? new Date(time.getTime()) : time)) : null);
 				}
 			}
 		},
@@ -291,10 +298,11 @@
 		_doFocus: function(elem) {
 			var input = (elem.nodeName && elem.nodeName.toLowerCase() === 'input' ? elem : this);
 			if (plugin._lastInput === input || plugin.isDisabled(input)) {
+				plugin._focussed = false;
 				return;
 			}
 			var inst = plugin._getInst(input);
-			inst._field = 0;
+			plugin._focussed = true;
 			plugin._lastInput = input;
 			plugin._blurredInput = null;
 			$.extend(inst.options, ($.isFunction(inst.options.beforeShow) ?
@@ -318,11 +326,14 @@
 			var input = event.target;
 			var inst = plugin._getInst(input);
 			var prevField = inst._field;
-			inst._field = plugin._getSelection(inst, input, event);
+			if (!plugin._focussed) {
+				inst._field = plugin._getSelection(inst, input, event);
+			}
 			if (prevField !== inst._field) {
 				inst._lastChr = '';
 			}
 			plugin._showField(inst);
+			plugin._focussed = false;
 		},
 
 		/** Find the selected subfield within the control.
@@ -333,25 +344,25 @@
 			@return {number} The selected subfield. */
 		_getSelection: function(inst, input, event) {
 			var select = 0;
-			var fieldSize = inst.options.separator.length + 2;
-			if (typeof input.selectionStart !== 'undefined') { // Use input select range
+			var fieldSizes = [inst.elem.val().split(inst.options.separator)[0].length, 2, 2];
+			if (input.selectionStart !== null) { // Use input select range
+				var end = 0;
 				for (var field = 0; field <= Math.max(1, inst._secondField, inst._ampmField); field++) {
-					var end = (field !== inst._ampmField ? (field * fieldSize) + 2 :
-						(inst._ampmField * fieldSize) + inst.options.ampmPrefix.length +
-						inst.options.ampmNames[0].length);
+					end += (field !== inst._ampmField ? fieldSizes[field] + inst.options.separator.length :
+						inst.options.ampmPrefix.length + inst.options.ampmNames[0].length);
 					select = field;
 					if (input.selectionStart < end) {
 						break;
 					}
 				}
 			}
-			else if (input.createTextRange && event != null && $(input).val()) { // Check against bounding boxes
-				var src = $(event.target || event.srcElement);
+			else if (input.createTextRange && event != null) { // Check against bounding boxes
+				var src = $(event.srcElement);
 				var range = input.createTextRange();
 				var convert = function(value) {
 					return {thin: 2, medium: 4, thick: 6}[value] || value;
 				};
-				var offsetX = (event.clientX || 0) + document.documentElement.scrollLeft -
+				var offsetX = event.clientX + document.documentElement.scrollLeft -
 					(src.offset().left + parseInt(convert(src.css('border-left-width')), 10)) -
 					range.offsetLeft; // Position - left edge - alignment
 				for (var field = 0; field <= Math.max(1, inst._secondField, inst._ampmField); field++) {
@@ -372,7 +383,7 @@
 		/** Handle keystrokes in the field.
 			@private
 			@param event {Event} The keydown event.
-			@return {boolean} True to continue, false to stop processing. */
+			@return {boolean} <code>true</code> to continue, <code>false</code> to stop processing. */
 		_doKeyDown: function(event) {
 			if (event.keyCode >= 48) { // >= '0'
 				return true;
@@ -405,6 +416,7 @@
 				case 39: plugin._changeField(inst, +1, false); break; // Next field on right
 				case 40: plugin._adjustField(inst, -1); break; // Decrement time field on down
 				case 46: plugin._setValue(inst, ''); break; // Clear time on delete
+				case 8: inst._lastChr = ''; // Fall through
 				default: return true;
 			}
 			return false;
@@ -413,7 +425,7 @@
 		/** Disallow unwanted characters.
 			@private
 			@param event {Event} The keypress event.
-			@return {boolean} True to continue, false to stop processing. */
+			@return {boolean} <code>true</code> to continue, <code>false</code> to stop processing. */
 		_doKeyPress: function(event) {
 			var chr = String.fromCharCode(event.charCode === undefined ? event.keyCode : event.charCode);
 			if (chr < ' ') {
@@ -436,21 +448,23 @@
 				var key = parseInt(chr, 10);
 				var value = parseInt(inst._lastChr + chr, 10);
 				var hour = (inst._field !== 0 ? inst._selectedHour :
+					(inst.options.unlimitedHours ? value :
 					(inst.options.show24Hours ? (value < 24 ? value : key) :
 					(value >= 1 && value <= 12 ? value :
 					(key > 0 ? key : inst._selectedHour)) % 12 +
-					(inst._selectedHour >= 12 ? 12 : 0)));
+					(inst._selectedHour >= 12 ? 12 : 0))));
 				var minute = (inst._field !== 1 ? inst._selectedMinute :
 					(value < 60 ? value : key));
 				var second = (inst._field !== inst._secondField ? inst._selectedSecond :
 					(value < 60 ? value : key));
 				var fields = this._constrainTime(inst, [hour, minute, second]);
-				this._setTime(inst, new Date(0, 0, 0, fields[0], fields[1], fields[2]));
+				this._setTime(inst, (inst.options.unlimitedHours ? fields :
+					new Date(0, 0, 0, fields[0], fields[1], fields[2])));
 				if (inst.options.noSeparatorEntry && inst._lastChr) {
 					this._changeField(inst, +1, false);
 				}
 				else {
-					inst._lastChr = chr;
+					inst._lastChr = (inst.options.unlimitedHours && inst._field === 0 ? inst._lastChr + chr : chr);
 				}
 			}
 			else if (!inst.options.show24Hours) { // Set am/pm based on first char of names
@@ -479,7 +493,7 @@
 			var inst = plugin._getInst(event.target);
 			inst.elem.focus();
 			if (!inst.elem.val()) {
-				plugin._parseDate(inst);
+				plugin._parseTime(inst);
 			}
 			plugin._adjustField(inst, delta);
 			event.preventDefault();
@@ -738,8 +752,7 @@
 				hour = ((isAM || isPM) && hour === 12 ? 0 : hour) + (isPM ? 12 : 0);
 				var minute = parseInt(currentTime[1], 10);
 				minute = (isNaN(minute) ? 0 : minute);
-				var second = (currentTime.length >= 3 ?
-					parseInt(currentTime[2], 10) : 0);
+				var second = (currentTime.length >= 3 ? parseInt(currentTime[2], 10) : 0);
 				second = (isNaN(second) || !inst.options.showSeconds ? 0 : second);
 				return this._constrainTime(inst, [hour, minute, second]);
 			} 
@@ -775,13 +788,14 @@
 			@private
 			@param inst {object} The instance settings. */
 		_showTime: function(inst) {
-			var currentTime = (this._formatNumber(inst.options.show24Hours ? inst._selectedHour :
-				((inst._selectedHour + 11) % 12) + 1) + inst.options.separator +
+			var currentTime = (inst.options.unlimitedHours ? inst._selectedHour :
+				this._formatNumber(inst.options.show24Hours ? inst._selectedHour :
+				((inst._selectedHour + 11) % 12) + 1)) + inst.options.separator +
 				this._formatNumber(inst._selectedMinute) +
 				(inst.options.showSeconds ? inst.options.separator +
 				this._formatNumber(inst._selectedSecond) : '') +
 				(inst.options.show24Hours ?  '' : inst.options.ampmPrefix +
-				inst.options.ampmNames[(inst._selectedHour < 12 ? 0 : 1)]));
+				inst.options.ampmNames[(inst._selectedHour < 12 ? 0 : 1)]);
 			this._setValue(inst, currentTime);
 			this._showField(inst);
 		},
@@ -794,11 +808,16 @@
 			if (inst.elem.is(':hidden') || plugin._lastInput !== input) {
 				return;
 			}
-			var fieldSize = inst.options.separator.length + 2;
-			var start = (inst._field !== inst._ampmField ? (inst._field * fieldSize) :
-				(inst._ampmField * fieldSize) - inst.options.separator.length +
-				inst.options.ampmPrefix.length);
-			var end = start + (inst._field !== inst._ampmField ? 2 : inst.options.ampmNames[0].length);
+			var fieldSizes = [inst.elem.val().split(inst.options.separator)[0].length, 2, 2];
+			var start = 0;
+			var field = 0;
+			while (field < inst._field) {
+				start += fieldSizes[field] +
+					(field === Math.max(1, inst._secondField) ? 0 : inst.options.separator.length);
+				field++;
+			}
+			var end = start + (inst._field !== inst._ampmField ? fieldSizes[field] :
+				inst.options.ampmPrefix.length + inst.options.ampmNames[0].length);
 			if (input.setSelectionRange) { // Mozilla
 				input.setSelectionRange(start, end);
 			}
@@ -835,8 +854,8 @@
 			@private
 			@param inst {object} The instance settings.
 			@param offset {number} The direction of change (-1, +1).
-			@param moveOut {boolean} True if can move out of the field.
-			@return {boolean} True if exiting the field, false if not. */
+			@param moveOut {boolean} <code>true</code> if can move out of the field.
+			@return {boolean} <code>true</code> if exiting the field, <code>false</code> if not. */
 		_changeField: function(inst, offset, moveOut) {
 			var atFirstLast = (inst.elem.val() === '' ||
 				inst._field === (offset === -1 ? 0 : Math.max(1, inst._secondField, inst._ampmField)));
@@ -856,29 +875,91 @@
 			if (inst.elem.val() === '') {
 				offset = 0;
 			}
+			if (inst.options.unlimitedHours) {
+				this._setTime(inst, [inst._selectedHour + (inst._field === 0 ? offset * inst.options.timeSteps[0] : 0),
+					inst._selectedMinute + (inst._field === 1 ? offset * inst.options.timeSteps[1] : 0),
+					inst._selectedSecond + (inst._field === inst._secondField ? offset * inst.options.timeSteps[2] : 0)]);
+			}
+			else {
 			this._setTime(inst, new Date(0, 0, 0,
 				inst._selectedHour + (inst._field === 0 ? offset * inst.options.timeSteps[0] : 0) +
 				(inst._field === inst._ampmField ? offset * 12 : 0),
 				inst._selectedMinute + (inst._field === 1 ? offset * inst.options.timeSteps[1] : 0),
-				inst._selectedSecond +
-				(inst._field === inst._secondField ? offset * inst.options.timeSteps[2] : 0)));
+					inst._selectedSecond + (inst._field === inst._secondField ? offset * inst.options.timeSteps[2] : 0)));
+			}
 		},
 
 		/** Check against minimum/maximum and display time.
 			@private
 			@param inst {object} The instance settings.
-			@param time {Date|number|string} The actual time or offset in seconds from now or
-					units and periods of offsets from now. */
+			@param time {Date|number|string|number[]} The actual time or offset in seconds from now or
+					units and periods of offsets from now or numeric period values. */
 		_setTime: function(inst, time) {
+			if (inst.options.unlimitedHours && $.isArray(time)) {
+				var fields = time;
+			}
+			else {
 			time = this._determineTime(time, inst);
-			var fields = this._constrainTime(inst, time ?
-				[time.getHours(), time.getMinutes(), time.getSeconds()] : null);
+				var fields = (time ? [time.getHours(), time.getMinutes(), time.getSeconds()] : null);
+			}
+			fields = this._constrainTime(inst, fields);
 			time = new Date(0, 0, 0, fields[0], fields[1], fields[2]);
 			// Normalise to base date
 			var time = this._normaliseTime(time);
 			var minTime = this._normaliseTime(this._determineTime(inst.options.minTime, inst));
 			var maxTime = this._normaliseTime(this._determineTime(inst.options.maxTime, inst));
 			// Ensure it is within the bounds set
+			if (inst.options.unlimitedHours) {
+				while (fields[2] < 0) {
+					fields[2] += 60;
+					fields[1]--;
+				}
+				while (fields[2] > 59) {
+					fields[2] -= 60;
+					fields[1]++;
+				}
+				while (fields[1] < 0) {
+					fields[1] += 60;
+					fields[0]--;
+				}
+				while (fields[1] > 59) {
+					fields[1] -= 60;
+					fields[0]++;
+				}
+				minTime = (inst.options.minTime != null && $.isArray(inst.options.minTime)) ?
+					inst.options.minTime : [0, 0, 0];
+				if (fields[0] < minTime[0]) {
+					fields = minTime.slice(0, 3);
+				}
+				else if (fields[0] === minTime[0]) {
+					if (fields[1] < minTime[1]) {
+						fields[1] = minTime[1];
+						fields[2] = minTime[2];
+					}
+					else if (fields[1] === minTime[1]) {
+						if (fields[2] < minTime[2]) {
+							fields[2] = minTime[2];
+						}
+					}
+				}
+				if (inst.options.maxTime != null && $.isArray(inst.options.maxTime)) {
+					if (fields[0] > inst.options.maxTime[0]) {
+						fields = inst.options.maxTime.slice(0, 3);
+					}
+					else if (fields[0] === inst.options.maxTime[0]) {
+						if (fields[1] > inst.options.maxTime[1]) {
+							fields[1] = inst.options.maxTime[1];
+							fields[2] = inst.options.maxTime[2];
+						}
+						else if (fields[1] === inst.options.maxTime[1]) {
+							if (fields[2] > inst.options.maxTime[2]) {
+								fields[2] = inst.options.maxTime[2];
+							}
+						}
+					}
+				}
+			}
+			else {
 			if (minTime && maxTime && minTime > maxTime) {
 				if (time < minTime && time > maxTime) {
 					time = (Math.abs(time - minTime) < Math.abs(time - maxTime) ? minTime : maxTime);
@@ -888,21 +969,28 @@
 				time = (minTime && time < minTime ? minTime :
 					(maxTime && time > maxTime ? maxTime : time));
 			}
+				fields[0] = time.getHours();
+				fields[1] = time.getMinutes();
+				fields[2] = time.getSeconds();
+			}
 			// Perform further restrictions if required
 			if ($.isFunction(inst.options.beforeSetTime)) {
 				time = inst.options.beforeSetTime.apply(inst.elem[0],
 					[this.getTime(inst.elem[0]), time, minTime, maxTime]);
+				fields[0] = time.getHours();
+				fields[1] = time.getMinutes();
+				fields[2] = time.getSeconds();
 			}
-			inst._selectedHour = time.getHours();
-			inst._selectedMinute = time.getMinutes();
-			inst._selectedSecond = time.getSeconds();
+			inst._selectedHour = fields[0];
+			inst._selectedMinute = fields[1];
+			inst._selectedSecond = fields[2];
 			this._showTime(inst);
 		},
 
 		/** A time may be specified as an exact value or a relative one.
 			@private
-			@param setting {Date|number|string} The actual time or offset in seconds from now or
-					units and periods of offsets from now.
+			@param setting {Date|number|string|number[]} The actual time or offset in seconds from now or
+					units and periods of offsets from now or numeric period values.
 			@param inst {object} The instance settings.
 			@return {Date} The calculated time. */
 		_determineTime: function(setting, inst) {
@@ -943,8 +1031,12 @@
 				}
 				return time;
 			};
+			var offsetArray = function(setting) {
+				return new Date(0, 0, 0, setting[0], setting[1] || 0, setting[2] || 0, 0);
+			};
 			return (setting ? (typeof setting === 'string' ? offsetString(setting) :
-				(typeof setting === 'number' ? offsetNumeric(setting) : setting)) : null);
+				(typeof setting === 'number' ? offsetNumeric(setting) :
+				($.isArray(setting) ? offsetArray(setting) : setting))) : null);
 		},
 
 		/** Normalise time object to a common date.
