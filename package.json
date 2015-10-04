@@ -1,0 +1,16 @@
+{
+  "name": "jquery-timeentry ",
+  "version": "2.0.1",
+  "description": "This plugin sets an input field up to accept a time value using a spinner or the keyboard.",
+  "author": "https://github.com/kbwood/timeentry/graphs/contributors",
+  "license": "MIT",
+  "homepage": "http://keith-wood.name/timeEntry.html",
+  "main": "jquery.timeentry.js",
+  "dependencies": {},
+  "devDependencies": {},
+  "scripts": {},
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/kbwood/timeentry"
+  }
+}
