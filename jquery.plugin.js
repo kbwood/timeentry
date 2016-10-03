@@ -217,7 +217,7 @@
 					var count = data.substring(0, i).match(/"/g); // Handle embedded ':'
 					return (!count || count.length % 2 === 0 ? '"' + group + '":' : group + ':');
 				});
-				data = $.parseJSON('{' + data + '}');
+				data = JSON.parse('{' + data + '}');
 				for (var name in data) { // Convert dates
 					var value = data[name];
 					if (typeof value === 'string' && value.match(/^new Date\((.*)\)$/)) {
