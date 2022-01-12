@@ -1047,9 +1047,7 @@
 			if (!time) {
 				return null;
 			}
-			time.setFullYear(1900);
-			time.setMonth(0);
-			time.setDate(0);
+			time.setUTCFullYear(1900,0,0);
 			return time;
 		}
 	});
